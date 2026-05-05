@@ -2,7 +2,7 @@
 
 A modern Streamlit-powered career intelligence portal for resume parsing, role recommendation, and military-to-civilian skill translation.
 
-![TalentSync Dashboard](Proof Of Work/dashbaord.png)
+![TalentSync Dashboard](proof-of-work/dashbaord.png)
 
 ## What TalentSync does
 
@@ -29,16 +29,16 @@ This project is designed for users who want a smarter way to map experience to r
 ## What the app looks like
 
 ### 1. Professional landing page
-![Portal landing](Proof Of Work/dashbaord.png)
+![Portal landing](proof-of-work/dashbaord.png)
 
 ### 2. Profile builder view
-![Profile builder](Proof Of Work/profilepage.png)
+![Profile builder](proof-of-work/profilepage.png)
 
 ### 3. Role recommendations with scoring breakdown
-![Role matching](Proof Of Work/rolematching page.png)
+![Role matching](proof-of-work/rolematching-page.png)
 
 ### 4. Validation and quality analytics
-![Validation outcome](Proof Of Work/Validation outcome.png)
+![Validation outcome](proof-of-work/validation-outcome.png)
 
 ## How it works
 
