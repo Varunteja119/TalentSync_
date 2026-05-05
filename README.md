@@ -2,7 +2,7 @@
 
 A modern Streamlit-powered career intelligence portal for resume parsing, role recommendation, and military-to-civilian skill translation.
 
-![TalentSync Dashboard](Proof Of Work/Screenshot 2026-04-16 001608.png)
+![TalentSync Dashboard](Proof Of Work/dashbaord.png)
 
 ## What TalentSync does
 
@@ -29,16 +29,16 @@ This project is designed for users who want a smarter way to map experience to r
 ## What the app looks like
 
 ### 1. Professional landing page
-![Portal landing](Proof Of Work/Screenshot 2026-04-16 001608.png)
+![Portal landing](Proof Of Work/dashbaord.png)
 
 ### 2. Profile builder view
-![Profile builder](Proof Of Work/Screenshot 2026-04-16 001636.png)
+![Profile builder](Proof Of Work/profilepage.png)
 
 ### 3. Role recommendations with scoring breakdown
-![Role matching](Proof Of Work/Screenshot 2026-04-16 001708.png)
+![Role matching](Proof Of Work/rolematching page.png)
 
 ### 4. Validation and quality analytics
-![Validation outcome](Proof Of Work/Screenshot 2026-04-15 031632.png)
+![Validation outcome](Proof Of Work/Validation outcome.png)
 
 ## How it works
 
@@ -59,6 +59,15 @@ streamlit run streamlit_app.py
 ```
 
 Open the URL shown in the terminal (`http://localhost:8501` by default).
+
+## Deploy publicly
+
+If you want the portal to be accessible from anywhere, deploy it to a hosting service:
+
+- **Streamlit Cloud**: connect the GitHub repo, select `master`, and set the main file to `streamlit_app.py`.
+- **Heroku / Railway / other Python hosts**: use the same repo and ensure dependencies are installed.
+
+In either case, the app will run the same Streamlit portal users already experience locally.
 
 ## Project structure
 
