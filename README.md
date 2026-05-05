@@ -1,8 +1,6 @@
 # TalentSync
 
-A modern Streamlit-powered career intelligence portal for resume parsing, role recommendation, and military-to-civilian skill translation.
-
-![TalentSync Dashboard](proof-of-work/dashbaord.png)
+TalentSync is a modern Streamlit-powered career intelligence portal that transforms unstructured resumes into actionable career insights. It combines resume parsing, role recommendation, and military-to-civilian skill translation in a single workflow to help job seekers discover the best-fit career paths quickly and confidently.
 
 ## What TalentSync does
 
