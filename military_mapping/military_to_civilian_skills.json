@@ -1,0 +1,45 @@
+{
+  "military_logistics_operations": {
+    "military_terms": [
+      "warehouse management",
+      "inventory control",
+      "supply chain logistics",
+      "transport coordination",
+      "procurement"
+    ],
+    "civilian_skills": [
+      "logistics management",
+      "inventory management",
+      "supply chain management",
+      "operations planning"
+    ]
+  },
+
+  "military_administration": {
+    "military_terms": [
+      "documentation",
+      "record keeping",
+      "payroll coordination",
+      "report preparation"
+    ],
+    "civilian_skills": [
+      "office administration",
+      "documentation management",
+      "payroll",
+      "human resources support"
+    ]
+  },
+
+  "military_operations_supervision": {
+    "military_terms": [
+      "team supervision",
+      "operations planning",
+      "resource allocation"
+    ],
+    "civilian_skills": [
+      "operations management",
+      "team leadership",
+      "process optimization"
+    ]
+  }
+}

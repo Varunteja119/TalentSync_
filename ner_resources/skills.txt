@@ -1,0 +1,79 @@
+leadership
+team leadership
+team management
+operations management
+operations planning
+business operations
+logistics
+logistics coordination
+supply chain management
+supply management
+transport coordination
+resource management
+risk assessment
+risk management
+risk mitigation
+strategic planning
+tactical planning
+operational planning
+decision making
+problem solving
+crisis management
+emergency response
+incident management
+communication
+stakeholder communication
+coordination
+team coordination
+client coordination
+training
+training and development
+discipline
+adaptability
+time management
+project management
+process improvement
+workflow optimization
+quality assurance
+compliance
+security operations
+asset protection
+surveillance operations
+patrol operations
+intelligence analysis
+field intelligence
+situation assessment
+threat analysis
+command and control
+battlefield coordination
+field operations
+mission planning
+equipment handling
+weapons handling
+radio communication
+signal operations
+network communication
+technical troubleshooting
+system monitoring
+system operations
+maintenance operations
+technical support
+data analysis
+data interpretation
+report writing
+report generation
+reporting and analysis
+documentation
+performance monitoring
+machine learning
+deep learning
+computer vision
+model deployment
+api development
+backend development
+data structures
+algorithms
+graph neural networks
+iot
+embedded systems
+edge ai

@@ -1,0 +1,33 @@
+accountant
+staff accountant
+audit intern
+tax intern
+financial analyst
+office manager
+human resources executive
+real estate agent
+loan consultant
+paralegal
+sales representative
+data analyst
+software engineer
+python developer
+devops engineer
+signals officer
+platoon commander
+company commander
+logistics officer
+intelligence officer
+combat engineer
+operations officer
+field officer
+training officer
+security officer
+maintenance officer
+software engineer
+developer
+backend developer
+frontend developer
+full stack developer
+intern
+project engineer

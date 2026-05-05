@@ -1,0 +1,42 @@
+# Python artifacts
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.venv/
+.venv-1/
+venv/
+
+# Local editor / OS files
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# Temporary files
+temp/
+
+# Generated outputs / artifacts
+refined_text/
+ner_output/
+normalized_skills/
+ex_servicemen_dataset/
+role_recommendations/
+powerbi/
+
+# Archive / large binary artifacts
+Report_Template_Inhouse/
+Resumes Datasets/
+resume_new_datasets/
+*.docx
+*.pptx
+*.zip
+*.mp4
+
+# Keep Proof Of Work directory in the repo
+!Proof Of Work/
+
+# Optional: dataset inputs if they are too large to store in repo
+# clean_text/
+# ocr_raw/
+# datasets_selected/

@@ -1,0 +1,49 @@
+excel
+powerpoint
+quickbooks
+sap
+oracle
+people soft
+lawson
+sage
+adp
+as400
+emr
+procore
+textura
+sql
+python
+power bi
+tableau
+tensorflow
+pytorch
+ms word
+ms office
+google sheets
+google docs
+jira
+confluence
+trello
+slack
+notion
+git
+github
+docker
+kubernetes
+linux
+aws
+azure
+gcp
+matlab
+autocad
+solidworks
+ansys
+scada
+plc
+scikit-learn
+fastapi
+flask
+yolov5
+onnx
+numpy
+matplotlib

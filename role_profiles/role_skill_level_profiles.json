@@ -1,0 +1,459 @@
+{
+  "Accounts Executive": {
+    "core_skills": [
+      "accounts payable",
+      "account reconciliation",
+      "general ledger accounting"
+    ],
+    "optional_skills": [
+      "excel",
+      "payroll"
+    ],
+    "min_level": 1,
+    "ideal_level": 2
+  },
+
+  "Finance Operations Analyst": {
+    "core_skills": [
+      "budgeting",
+      "excel",
+      "general ledger accounting"
+    ],
+    "optional_skills": [
+      "accounts payable",
+      "account reconciliation"
+    ],
+    "min_level": 2,
+    "ideal_level": 3
+  },
+
+  "Compliance Analyst": {
+    "core_skills": [
+      "compliance",
+      "audit"
+    ],
+    "optional_skills": [
+      "risk analysis",
+      "excel"
+    ],
+    "min_level": 2,
+    "ideal_level": 3
+  },
+
+  "Payroll & HR Operations Executive": {
+    "core_skills": [
+      "payroll",
+      "compliance"
+    ],
+    "optional_skills": [
+      "excel",
+      "accounts payable"
+    ],
+    "min_level": 1,
+    "ideal_level": 2
+  },
+
+  "Risk & Audit Analyst": {
+    "core_skills": [
+      "audit",
+      "risk analysis"
+    ],
+    "optional_skills": [
+      "compliance",
+      "excel"
+    ],
+    "min_level": 2,
+    "ideal_level": 3
+  },
+
+  "ERP Support Analyst": {
+    "core_skills": [
+      "sap",
+      "sql"
+    ],
+    "optional_skills": [
+      "excel"
+    ],
+    "min_level": 2,
+    "ideal_level": 3
+  },
+
+  "Business Systems Analyst": {
+    "core_skills": [
+      "sql",
+      "excel"
+    ],
+    "optional_skills": [
+      "sap",
+      "python"
+    ],
+    "min_level": 2,
+    "ideal_level": 3
+  },
+
+  "Junior Data Analyst": {
+    "core_skills": [
+      "sql",
+      "excel"
+    ],
+    "optional_skills": [
+      "python"
+    ],
+    "min_level": 2,
+    "ideal_level": 2
+  },
+
+  "Project Operations Coordinator": {
+    "core_skills": [
+      "project management",
+      "coordination"
+    ],
+    "optional_skills": [
+      "compliance",
+      "negotiation"
+    ],
+    "min_level": 2,
+    "ideal_level": 3
+  },
+
+  "Operations & Compliance Lead": {
+    "core_skills": [
+      "compliance",
+      "project management",
+      "negotiation"
+    ],
+    "optional_skills": [
+      "audit",
+      "risk analysis"
+    ],
+    "min_level": 3,
+    "ideal_level": 4
+  },
+
+  "Software Engineer": {
+    "core_skills": [
+      "python",
+      "git"
+    ],
+    "optional_skills": [
+      "docker",
+      "linux"
+    ],
+    "min_level": 1,
+    "ideal_level": 2
+  },
+
+  "Data Analyst": {
+    "core_skills": [
+      "data analysis",
+      "sql"
+    ],
+    "optional_skills": [
+      "python",
+      "excel"
+    ],
+    "min_level": 1,
+    "ideal_level": 2
+  },
+
+  "Operations Manager": {
+    "core_skills": [
+      "operations",
+      "leadership",
+      "coordination"
+    ],
+    "optional_skills": [
+      "project management",
+      "communication"
+    ],
+    "min_level": 1,
+    "ideal_level": 2
+  },
+
+  "Project Coordinator": {
+    "core_skills": [
+      "project management",
+      "coordination"
+    ],
+    "optional_skills": [
+      "communication",
+      "documentation"
+    ],
+    "min_level": 1,
+    "ideal_level": 2
+  },
+
+  "Network Engineer": {
+    "core_skills": [
+      "network communication",
+      "communication systems"
+    ],
+    "optional_skills": [
+      "linux"
+    ],
+    "min_level": 1,
+    "ideal_level": 2
+  },
+
+  "AI Engineer": {
+    "core_skills": [
+      "machine learning",
+      "pytorch"
+    ],
+    "optional_skills": [
+      "computer vision",
+      "model deployment"
+    ],
+    "min_level": 1,
+    "ideal_level": 2
+  },
+
+  "Backend Developer": {
+    "core_skills": [
+      "python",
+      "api development"
+    ],
+    "optional_skills": [
+      "fastapi",
+      "docker"
+    ],
+    "min_level": 1,
+    "ideal_level": 2
+  },
+
+  "Machine Learning Engineer": {
+    "core_skills": [
+      "machine learning",
+      "python"
+    ],
+    "optional_skills": [
+      "pytorch",
+      "data analysis"
+    ],
+    "min_level": 1,
+    "ideal_level": 2
+  },
+
+  "IoT Engineer": {
+    "core_skills": [
+      "iot",
+      "embedded systems"
+    ],
+    "optional_skills": [
+      "edge ai",
+      "raspberry pi"
+    ],
+    "min_level": 1,
+    "ideal_level": 2
+  },
+
+  "Logistics Manager": {
+    "core_skills": [
+      "logistics",
+      "coordination"
+    ],
+    "optional_skills": [
+      "supply chain management",
+      "planning"
+    ],
+    "min_level": 1,
+    "ideal_level": 2
+  },
+
+  "Security Manager": {
+    "core_skills": [
+      "security operations",
+      "surveillance"
+    ],
+    "optional_skills": [
+      "risk assessment",
+      "incident management"
+    ],
+    "min_level": 1,
+    "ideal_level": 2
+  },
+
+  "Operations Executive": {
+    "core_skills": [
+      "operations",
+      "execution"
+    ],
+    "optional_skills": [
+      "coordination",
+      "communication"
+    ],
+    "min_level": 1,
+    "ideal_level": 2
+  },
+
+  "Program Manager": {
+    "core_skills": [
+      "leadership",
+      "coordination"
+    ],
+    "optional_skills": [
+      "operations",
+      "planning",
+      "communication"
+    ],
+    "min_level": 1,
+    "ideal_level": 2
+  },
+
+  "Team Lead": {
+    "core_skills": [
+      "leadership",
+      "team management"
+    ],
+    "optional_skills": [
+      "communication",
+      "coordination"
+    ],
+    "min_level": 1,
+    "ideal_level": 2
+  },
+
+  "Field Operations Manager": {
+    "core_skills": [
+      "operations",
+      "field operations"
+    ],
+    "optional_skills": [
+      "logistics",
+      "coordination"
+    ],
+    "min_level": 1,
+    "ideal_level": 2
+  },
+
+  "Supply Chain Manager": {
+    "core_skills": [
+      "supply chain management",
+      "logistics"
+    ],
+    "optional_skills": [
+      "planning",
+      "inventory management"
+    ],
+    "min_level": 1,
+    "ideal_level": 2
+  },
+
+  "Maintenance Manager": {
+    "core_skills": [
+      "maintenance operations",
+      "technical troubleshooting"
+    ],
+    "optional_skills": [
+      "system monitoring",
+      "equipment handling"
+    ],
+    "min_level": 1,
+    "ideal_level": 2
+  },
+
+  "Risk Manager": {
+    "core_skills": [
+      "risk assessment",
+      "decision making"
+    ],
+    "optional_skills": [
+      "analysis",
+      "threat analysis"
+    ],
+    "min_level": 1,
+    "ideal_level": 2
+  },
+
+  "Compliance Officer": {
+    "core_skills": [
+      "compliance",
+      "documentation"
+    ],
+    "optional_skills": [
+      "report writing",
+      "analysis"
+    ],
+    "min_level": 1,
+    "ideal_level": 2
+  },
+
+  "Technical Support Engineer": {
+    "core_skills": [
+      "technical troubleshooting",
+      "system monitoring"
+    ],
+    "optional_skills": [
+      "communication",
+      "documentation"
+    ],
+    "min_level": 1,
+    "ideal_level": 2
+  },
+
+  "DevOps Engineer": {
+    "core_skills": [
+      "docker",
+      "linux"
+    ],
+    "optional_skills": [
+      "kubernetes",
+      "aws",
+      "ci/cd"
+    ],
+    "min_level": 1,
+    "ideal_level": 2
+  },
+
+  "Software Developer": {
+    "core_skills": [
+      "python",
+      "data structures"
+    ],
+    "optional_skills": [
+      "algorithms",
+      "backend development"
+    ],
+    "min_level": 1,
+    "ideal_level": 2
+  },
+
+  "Full Stack Developer": {
+    "core_skills": [
+      "javascript",
+      "backend development"
+    ],
+    "optional_skills": [
+      "api development",
+      "frontend"
+    ],
+    "min_level": 1,
+    "ideal_level": 2
+  },
+
+  "Data Scientist": {
+    "core_skills": [
+      "machine learning",
+      "data analysis"
+    ],
+    "optional_skills": [
+      "python",
+      "deep learning"
+    ],
+    "min_level": 1,
+    "ideal_level": 2
+  },
+
+  "AI Research Engineer": {
+    "core_skills": [
+      "deep learning",
+      "machine learning"
+    ],
+    "optional_skills": [
+      "pytorch",
+      "research"
+    ],
+    "min_level": 1,
+    "ideal_level": 2
+  }
+}
