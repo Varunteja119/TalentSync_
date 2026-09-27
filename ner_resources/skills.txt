@@ -77,3 +77,22 @@ graph neural networks
 iot
 embedded systems
 edge ai
+natural language processing
+nlp
+retrieval augmented generation
+rag
+llm integration
+large language models
+prompt engineering
+semantic search
+vector search
+embeddings
+model context protocol
+conversational ai
+workflow automation
+task automation
+web scraping
+data pipelines
+data cleaning
+etl
+data visualization

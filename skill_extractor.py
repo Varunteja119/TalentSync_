@@ -1,5 +1,11 @@
 import os
 import re
+import json
+
+try:
+    from groq import Groq
+except ImportError:
+    Groq = None
 
 try:
     import spacy
@@ -83,6 +89,14 @@ SKILL_HINTS = {
     "account reconciliation": ["account reconciliation", "reconciliation"],
     "accounts payable": ["accounts payable", "ap process"],
     "general ledger accounting": ["general ledger", "ledger accounting"],
+    "natural language processing": ["natural language processing", "nlp"],
+    "retrieval augmented generation": ["retrieval augmented generation", "retrieval-augmented generation", "rag"],
+    "llm integration": ["llm", "llms", "large language model", "large language models", "llm integration"],
+    "prompt engineering": ["prompt engineering", "prompt design"],
+    "semantic search": ["semantic search", "vector search", "similarity search"],
+    "model context protocol": ["model context protocol", "mcp"],
+    "workflow automation": ["workflow automation", "process automation"],
+    "task automation": ["task automation", "automated tasks", "automation pipeline"],
 }
 
 ROLE_HINTS = {
@@ -104,6 +118,14 @@ TOOL_HINTS = {
     "excel": ["excel", "spreadsheets"],
     "sap": ["sap", "sap erp"],
     "power bi": ["power bi"],
+    "langchain": ["langchain"],
+    "chromadb": ["chromadb", "chroma db", "chroma"],
+    "openai": ["openai", "open ai", "gpt", "chatgpt"],
+    "huggingface": ["huggingface", "hugging face", "transformers"],
+    "postgresql": ["postgresql", "postgres"],
+    "pandas": ["pandas"],
+    "streamlit": ["streamlit"],
+    "beautifulsoup": ["beautifulsoup", "beautiful soup", "bs4"],
 }
 
 
@@ -262,6 +284,176 @@ def _extract_entities_fallback(text: str):
     }
 
 
+# ==========================================
+# LLM Fallback (open-vocabulary extraction)
+# ==========================================
+# The NER path and the keyword-fallback path above both share the same
+# ceiling: they can only ever find terms that already exist in
+# skills.txt / roles.txt / tools.txt (or the SKILL_HINTS / ROLE_HINTS /
+# TOOL_HINTS dictionaries). A resume using a framework or domain term
+# that isn't in those lists yet -- a new library, a niche specialty --
+# will silently under-extract, no matter how good the matching regex is.
+#
+# This fallback breaks that ceiling by asking an LLM to extract entities
+# directly from the text with no fixed vocabulary. It's deliberately the
+# LAST resort in extract_entities()'s tiered flow (list-match -> hint
+# boost -> LLM), since it's slower and costs an API call, unlike the
+# free/instant paths above it -- it should only fire when the resume's
+# terminology has genuinely outrun the static vocabulary.
+
+LOW_SIGNAL_THRESHOLD = 5
+
+GROQ_MODEL = os.environ.get("GROQ_MODEL", "openai/gpt-oss-120b")
+# ^ Groq periodically deprecates model names (this project has already
+# been bitten once during development -- llama-3.1-70b-versatile, then
+# its replacement llama-3.3-70b-versatile, were both retired within the
+# span of this project). Configurable via env var so a future deprecation
+# is a one-line env change, not a code edit. Check
+# https://console.groq.com/docs/deprecations for the current status.
+
+_groq_client_cache = {"client": None, "checked": False}
+
+
+def _get_groq_client():
+    """Lazily build (and cache) a Groq client from GROQ_API_KEY.
+    Returns None if the groq package isn't installed or no key is set --
+    callers must treat that as "LLM fallback unavailable" and degrade
+    gracefully, not raise."""
+    if _groq_client_cache["checked"]:
+        return _groq_client_cache["client"]
+
+    _groq_client_cache["checked"] = True
+    if Groq is None:
+        return None
+
+    api_key = os.environ.get("GROQ_API_KEY")
+    if not api_key:
+        return None
+
+    _groq_client_cache["client"] = Groq(api_key=api_key)
+    return _groq_client_cache["client"]
+
+
+LLM_EXTRACTION_PROMPT = """You are extracting structured career information from resume text.
+Read the resume text below and return ONLY a JSON object (no markdown fences, no commentary) with this exact shape:
+{{
+  "skills": ["...", "..."],
+  "roles": ["...", "..."],
+  "tools": ["...", "..."]
+}}
+
+Rules:
+- "skills" = methodologies, techniques, and domains of expertise (e.g. "retrieval augmented generation", "prompt engineering", "supply chain management").
+- "tools" = named software, frameworks, libraries, platforms, or products (e.g. "LangChain", "PostgreSQL", "Power BI").
+- "roles" = job titles or role archetypes the candidate has held or is targeting (e.g. "software engineer", "data analyst").
+- Lowercase every value.
+- Do not invent anything not implied by the text.
+- If a category has nothing, return an empty list for it.
+
+Resume text:
+---
+{resume_text}
+---
+"""
+
+
+def _clean_llm_list(values):
+    if not isinstance(values, list):
+        return []
+    return sorted(set(str(v).strip().lower() for v in values if str(v).strip()))
+
+
+MAX_CHUNK_CHARS = 6000
+MAX_LLM_CHUNKS = 4  # safety cap: an unusually huge "resume" (garbage OCR
+                     # text, a bad upstream extraction) shouldn't trigger
+                     # unbounded API spend. Real resumes fit in 1-2 chunks.
+
+
+def _chunk_text_for_llm(text, max_chars=MAX_CHUNK_CHARS):
+    """Split text into chunks that respect paragraph boundaries (blank
+    lines) instead of cutting at a fixed character count -- a straight
+    text[:max_chars] truncation silently drops whatever comes after the
+    cutoff (e.g. a candidate's most recent job or their education section)
+    with no indication anything was lost. Falls back to a hard split only
+    for a single paragraph that's itself longer than max_chars, so this
+    always terminates."""
+    if len(text) <= max_chars:
+        return [text]
+
+    paragraphs = re.split(r"\n\s*\n", text)
+    chunks = []
+    current = ""
+    for para in paragraphs:
+        candidate = f"{current}\n\n{para}" if current else para
+        if len(candidate) <= max_chars:
+            current = candidate
+            continue
+        if current:
+            chunks.append(current)
+        if len(para) > max_chars:
+            for i in range(0, len(para), max_chars):
+                chunks.append(para[i:i + max_chars])
+            current = ""
+        else:
+            current = para
+    if current:
+        chunks.append(current)
+    return chunks
+
+
+def _extract_entities_llm(text: str):
+    """
+    FALLBACK METHOD 2 (last resort): LLM-based open-vocabulary extraction.
+
+    Only reached when the vocabulary-based paths above are still thin.
+    Unlike list-matching, this has no fixed-vocabulary ceiling -- at the
+    cost of being slower, non-deterministic, and dependent on an external
+    API call. The resume is processed in paragraph-aware chunks (see
+    _chunk_text_for_llm) rather than truncated, so nothing past an
+    arbitrary character cutoff is silently dropped; results from every
+    chunk are merged. Any single chunk's failure (malformed response,
+    transient API error) is skipped rather than failing the whole
+    extraction -- whatever the other chunks found is still kept. If no
+    client is configured at all, this degrades to empty results, since
+    this is an enhancement layer, not a required one.
+    """
+    client = _get_groq_client()
+    if client is None:
+        return {"skills": [], "roles": [], "tools": []}
+
+    chunks = _chunk_text_for_llm(text)[:MAX_LLM_CHUNKS]
+
+    merged = {"skills": [], "roles": [], "tools": []}
+    for chunk in chunks:
+        prompt = LLM_EXTRACTION_PROMPT.format(resume_text=chunk)
+        try:
+            response = client.chat.completions.create(
+                model=GROQ_MODEL,
+                messages=[{"role": "user", "content": prompt}],
+                temperature=0,
+                max_tokens=800,
+            )
+            raw = response.choices[0].message.content.strip()
+            # Models sometimes wrap JSON in ```json ... ``` fences despite
+            # being told not to -- strip that defensively rather than fail.
+            raw = raw.strip("`")
+            if raw.lower().startswith("json"):
+                raw = raw[4:].strip()
+            parsed = json.loads(raw)
+        except Exception:
+            continue  # this chunk failed; keep whatever other chunks yielded
+
+        merged["skills"].extend(_clean_llm_list(parsed.get("skills")))
+        merged["roles"].extend(_clean_llm_list(parsed.get("roles")))
+        merged["tools"].extend(_clean_llm_list(parsed.get("tools")))
+
+    return {
+        "skills": sorted(set(merged["skills"])),
+        "roles": sorted(set(merged["roles"])),
+        "tools": sorted(set(merged["tools"])),
+    }
+
+
 def extract_entities(text: str):
     # Algorithm: Build final entities by merging NER-first extraction with fallback keyword/inference extraction.
     """
@@ -290,7 +482,7 @@ def extract_entities(text: str):
     }
 
     # Low-signal boost: if extraction is sparse, infer extra entities from section tokens.
-    if len(merged["skills"]) < 5:
+    if len(merged["skills"]) < LOW_SIGNAL_THRESHOLD:
         normalized_text = re.sub(r"\s+", " ", text.lower())
         section_tokens = _extract_section_tokens(text)
         searchable = set(section_tokens)
@@ -313,5 +505,21 @@ def extract_entities(text: str):
             "roles": list(set(merged["roles"])),
             "tools": list(set(merged["tools"])),
         }
-    
+
+    # Final fallback: if the vocabulary-based paths (NER + keyword fallback
+    # + hint boost) are STILL thin, the resume likely uses terminology this
+    # app's static lists don't know about yet. Rather than silently
+    # under-extracting, ask an LLM to do open-vocabulary extraction. This
+    # only fires as a last resort -- it's the slowest, costs an API call,
+    # and depends on GROQ_API_KEY being configured; if it isn't,
+    # _extract_entities_llm degrades to empty results and extract_entities
+    # just returns whatever the free paths already found.
+    if len(merged["skills"]) < LOW_SIGNAL_THRESHOLD:
+        llm_results = _extract_entities_llm(text)
+        merged = {
+            "skills": sorted(set(merged["skills"] + llm_results.get("skills", []))),
+            "roles": sorted(set(merged["roles"] + llm_results.get("roles", []))),
+            "tools": sorted(set(merged["tools"] + llm_results.get("tools", []))),
+        }
+
     return merged

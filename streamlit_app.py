@@ -12,11 +12,6 @@ except Exception:
     extract_entities = None
 
 try:
-    from normalizer import normalize_entities
-except Exception:
-    normalize_entities = None
-
-try:
     from role_matcher import match_roles
 except Exception:
     match_roles = None
@@ -345,11 +340,10 @@ def render_profile_view(profile):
 
             # Re-run entity extraction on the latest skill text so matching always reflects edits.
             extracted_entities = extract_entities(", ".join(manual_skills)) if manual_skills else {"skills": [], "roles": [], "tools": []}
-            normalized_entities = normalize_entities(extracted_entities)
 
-            merged_skills = sorted(set((manual_skills or []) + normalized_entities.get("skills", [])))
-            merged_roles = sorted(set((manual_roles or []) + normalized_entities.get("roles", [])))
-            merged_tools = sorted(set((manual_tools or []) + normalized_entities.get("tools", [])))
+            merged_skills = sorted(set((manual_skills or []) + extracted_entities.get("skills", [])))
+            merged_roles = sorted(set((manual_roles or []) + extracted_entities.get("roles", [])))
+            merged_tools = sorted(set((manual_tools or []) + extracted_entities.get("tools", [])))
 
             updated_profile = {
                 "name": name,
@@ -699,11 +693,7 @@ if not st.session_state.logged_in:
                 extracted = {"skills": [], "roles": [], "tools": []}
                 if callable(extract_entities):
                     try:
-                        extracted_entities = extract_entities(text)
-                        if callable(normalize_entities):
-                            extracted = normalize_entities(extracted_entities)
-                        else:
-                            extracted = extracted_entities
+                        extracted = extract_entities(text)
                     except Exception:
                         extracted = {"skills": [], "roles": [], "tools": []}
 
@@ -711,11 +701,11 @@ if not st.session_state.logged_in:
                     try:
                         with st.spinner("Processing resume..."):
                             result = run_pipeline(path)
-                        pipeline_normalized = result.get("normalized", {})
+                        pipeline_entities = result.get("raw", {})
                         extracted = {
-                            "skills": sorted(set(extracted.get("skills", []) + pipeline_normalized.get("skills", []))),
-                            "roles": sorted(set(extracted.get("roles", []) + pipeline_normalized.get("roles", []))),
-                            "tools": sorted(set(extracted.get("tools", []) + pipeline_normalized.get("tools", []))),
+                            "skills": sorted(set(extracted.get("skills", []) + pipeline_entities.get("skills", []))),
+                            "roles": sorted(set(extracted.get("roles", []) + pipeline_entities.get("roles", []))),
+                            "tools": sorted(set(extracted.get("tools", []) + pipeline_entities.get("tools", []))),
                         }
                     except Exception:
                         pass
@@ -738,7 +728,7 @@ if not st.session_state.logged_in:
         email = st.text_input("Email", basic.get("email", ""))
         phone = st.text_input("Phone", basic.get("phone", ""))
         location = st.text_input("Location", basic.get("location", ""))
-        linkedin = st.text_input("LinkedIn", "")
+        linkedin = st.text_input("LinkedIn", basic.get("linkedin", ""))
         summary = st.text_area(
             "Professional Summary",
             value="",
@@ -814,13 +804,17 @@ if not st.session_state.logged_in:
             )
             experience_list.append({"role": role, "company": company, "date": exp_date, "description": work_summary})
 
-        # Always extract entities (even if empty input)
-        entities = (
-            extract_entities(raw_skills)
-            if raw_skills and callable(extract_entities)
-            else {"skills": [], "roles": [], "tools": []}
-        )
-        normalized_entities = normalize_entities(entities) if callable(normalize_entities) else entities
+        # Skills come from whatever the user has in the editable text box
+        # (seeded from the resume, but editable before signup).
+        # Roles/tools are kept from the full-resume extraction above, since
+        # there's no equivalent editable field for them pre-signup and a
+        # short comma-separated skills string won't contain role/tool terms.
+        manual_skills = [s.strip() for s in raw_skills.split(",") if s.strip()] if raw_skills else []
+        entities = {
+            "skills": sorted(set(manual_skills + extracted.get("skills", []))),
+            "roles": extracted.get("roles", []),
+            "tools": extracted.get("tools", []),
+        }
 
         # Always build profile (no conditional)
         profile = {
@@ -833,9 +827,9 @@ if not st.session_state.logged_in:
             "linkedin": linkedin,
             "education": education_list,
             "experience": experience_list,
-            "skills": normalized_entities["skills"],
-            "roles": normalized_entities["roles"],
-            "tools": normalized_entities["tools"]
+            "skills": entities["skills"],
+            "roles": entities["roles"],
+            "tools": entities["tools"]
         }
 
         if st.button("🚀 Signup"):

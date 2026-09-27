@@ -40,3 +40,5 @@ resume_new_datasets/
 # clean_text/
 # ocr_raw/
 # datasets_selected/
+
+users.json

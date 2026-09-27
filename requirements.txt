@@ -1,0 +1,11 @@
+streamlit
+sentence-transformers
+scikit-learn
+numpy
+spacy
+PyPDF2
+python-docx
+pytesseract
+Pillow
+matplotlib
+groq

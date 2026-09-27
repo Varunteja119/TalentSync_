@@ -12,7 +12,6 @@
     "min_level": 1,
     "ideal_level": 2
   },
-
   "Finance Operations Analyst": {
     "core_skills": [
       "budgeting",
@@ -26,7 +25,6 @@
     "min_level": 2,
     "ideal_level": 3
   },
-
   "Compliance Analyst": {
     "core_skills": [
       "compliance",
@@ -39,7 +37,6 @@
     "min_level": 2,
     "ideal_level": 3
   },
-
   "Payroll & HR Operations Executive": {
     "core_skills": [
       "payroll",
@@ -52,7 +49,6 @@
     "min_level": 1,
     "ideal_level": 2
   },
-
   "Risk & Audit Analyst": {
     "core_skills": [
       "audit",
@@ -65,7 +61,6 @@
     "min_level": 2,
     "ideal_level": 3
   },
-
   "ERP Support Analyst": {
     "core_skills": [
       "sap",
@@ -77,7 +72,6 @@
     "min_level": 2,
     "ideal_level": 3
   },
-
   "Business Systems Analyst": {
     "core_skills": [
       "sql",
@@ -90,7 +84,6 @@
     "min_level": 2,
     "ideal_level": 3
   },
-
   "Junior Data Analyst": {
     "core_skills": [
       "sql",
@@ -102,7 +95,6 @@
     "min_level": 2,
     "ideal_level": 2
   },
-
   "Project Operations Coordinator": {
     "core_skills": [
       "project management",
@@ -115,7 +107,6 @@
     "min_level": 2,
     "ideal_level": 3
   },
-
   "Operations & Compliance Lead": {
     "core_skills": [
       "compliance",
@@ -129,7 +120,6 @@
     "min_level": 3,
     "ideal_level": 4
   },
-
   "Software Engineer": {
     "core_skills": [
       "python",
@@ -142,7 +132,6 @@
     "min_level": 1,
     "ideal_level": 2
   },
-
   "Data Analyst": {
     "core_skills": [
       "data analysis",
@@ -155,7 +144,6 @@
     "min_level": 1,
     "ideal_level": 2
   },
-
   "Operations Manager": {
     "core_skills": [
       "operations",
@@ -169,7 +157,6 @@
     "min_level": 1,
     "ideal_level": 2
   },
-
   "Project Coordinator": {
     "core_skills": [
       "project management",
@@ -182,7 +169,6 @@
     "min_level": 1,
     "ideal_level": 2
   },
-
   "Network Engineer": {
     "core_skills": [
       "network communication",
@@ -194,7 +180,6 @@
     "min_level": 1,
     "ideal_level": 2
   },
-
   "AI Engineer": {
     "core_skills": [
       "machine learning",
@@ -207,7 +192,6 @@
     "min_level": 1,
     "ideal_level": 2
   },
-
   "Backend Developer": {
     "core_skills": [
       "python",
@@ -220,7 +204,6 @@
     "min_level": 1,
     "ideal_level": 2
   },
-
   "Machine Learning Engineer": {
     "core_skills": [
       "machine learning",
@@ -233,7 +216,6 @@
     "min_level": 1,
     "ideal_level": 2
   },
-
   "IoT Engineer": {
     "core_skills": [
       "iot",
@@ -246,7 +228,6 @@
     "min_level": 1,
     "ideal_level": 2
   },
-
   "Logistics Manager": {
     "core_skills": [
       "logistics",
@@ -259,7 +240,6 @@
     "min_level": 1,
     "ideal_level": 2
   },
-
   "Security Manager": {
     "core_skills": [
       "security operations",
@@ -272,7 +252,6 @@
     "min_level": 1,
     "ideal_level": 2
   },
-
   "Operations Executive": {
     "core_skills": [
       "operations",
@@ -285,7 +264,6 @@
     "min_level": 1,
     "ideal_level": 2
   },
-
   "Program Manager": {
     "core_skills": [
       "leadership",
@@ -299,7 +277,6 @@
     "min_level": 1,
     "ideal_level": 2
   },
-
   "Team Lead": {
     "core_skills": [
       "leadership",
@@ -312,7 +289,6 @@
     "min_level": 1,
     "ideal_level": 2
   },
-
   "Field Operations Manager": {
     "core_skills": [
       "operations",
@@ -325,7 +301,6 @@
     "min_level": 1,
     "ideal_level": 2
   },
-
   "Supply Chain Manager": {
     "core_skills": [
       "supply chain management",
@@ -338,7 +313,6 @@
     "min_level": 1,
     "ideal_level": 2
   },
-
   "Maintenance Manager": {
     "core_skills": [
       "maintenance operations",
@@ -351,7 +325,6 @@
     "min_level": 1,
     "ideal_level": 2
   },
-
   "Risk Manager": {
     "core_skills": [
       "risk assessment",
@@ -364,7 +337,6 @@
     "min_level": 1,
     "ideal_level": 2
   },
-
   "Compliance Officer": {
     "core_skills": [
       "compliance",
@@ -377,7 +349,6 @@
     "min_level": 1,
     "ideal_level": 2
   },
-
   "Technical Support Engineer": {
     "core_skills": [
       "technical troubleshooting",
@@ -390,7 +361,6 @@
     "min_level": 1,
     "ideal_level": 2
   },
-
   "DevOps Engineer": {
     "core_skills": [
       "docker",
@@ -404,7 +374,6 @@
     "min_level": 1,
     "ideal_level": 2
   },
-
   "Software Developer": {
     "core_skills": [
       "python",
@@ -417,7 +386,6 @@
     "min_level": 1,
     "ideal_level": 2
   },
-
   "Full Stack Developer": {
     "core_skills": [
       "javascript",
@@ -430,7 +398,6 @@
     "min_level": 1,
     "ideal_level": 2
   },
-
   "Data Scientist": {
     "core_skills": [
       "machine learning",
@@ -443,7 +410,6 @@
     "min_level": 1,
     "ideal_level": 2
   },
-
   "AI Research Engineer": {
     "core_skills": [
       "deep learning",
@@ -452,6 +418,61 @@
     "optional_skills": [
       "pytorch",
       "research"
+    ],
+    "min_level": 1,
+    "ideal_level": 2
+  },
+  "Generative AI Engineer": {
+    "core_skills": [
+      "llm integration",
+      "prompt engineering",
+      "rag"
+    ],
+    "optional_skills": [
+      "semantic search",
+      "natural language processing",
+      "vector search"
+    ],
+    "min_level": 1,
+    "ideal_level": 2
+  },
+  "LLM Application Engineer": {
+    "core_skills": [
+      "rag",
+      "llm integration",
+      "api development"
+    ],
+    "optional_skills": [
+      "semantic search",
+      "vector search",
+      "workflow automation"
+    ],
+    "min_level": 1,
+    "ideal_level": 2
+  },
+  "AI Automation Engineer": {
+    "core_skills": [
+      "workflow automation",
+      "api development",
+      "task automation"
+    ],
+    "optional_skills": [
+      "rag",
+      "llm integration",
+      "data pipelines"
+    ],
+    "min_level": 1,
+    "ideal_level": 2
+  },
+  "NLP Engineer": {
+    "core_skills": [
+      "natural language processing",
+      "machine learning"
+    ],
+    "optional_skills": [
+      "semantic search",
+      "deep learning",
+      "llm integration"
     ],
     "min_level": 1,
     "ideal_level": 2

@@ -13,10 +13,25 @@ def _clean_lines(text):
 
 
 def _find_section(lines, section_keys, all_section_keys):
+    def _has_whole_word_key(line_upper, keys):
+        # Allow a simple trailing plural ("PROJECT" -> also matches
+        # "PROJECTS", "CERTIFICATION" -> also matches "CERTIFICATIONS")
+        # so a resume's actual header wording doesn't slip past the
+        # boundary check just because it's plural.
+        return any(re.search(rf"\b{re.escape(key)}S?\b", line_upper) for key in keys)
+
+    def _is_section_header_line(line, keys):
+        # A real section header is short — just the heading itself
+        # ("Experience", "Work Experience"), not a keyword occurring
+        # incidentally inside a longer sentence of body text (e.g. a
+        # Summary paragraph mentioning "hands-on experience").
+        if len(line.split()) > 4:
+            return False
+        return _has_whole_word_key(line.upper(), keys)
+
     start = None
     for idx, line in enumerate(lines):
-        upper = line.upper()
-        if any(key in upper for key in section_keys):
+        if _is_section_header_line(line, section_keys):
             start = idx + 1
             break
 
@@ -25,8 +40,7 @@ def _find_section(lines, section_keys, all_section_keys):
 
     end = len(lines)
     for idx in range(start, len(lines)):
-        upper = lines[idx].upper()
-        if any(key in upper for key in all_section_keys):
+        if _is_section_header_line(lines[idx], all_section_keys):
             end = idx
             break
 
@@ -45,7 +59,13 @@ def _looks_like_education_line(line):
         "compliance", "module", "software", "project", "intern", "engineer",
     ]
 
-    if any(marker in lower for marker in noisy_markers):
+    # Whole-word match only. Plain substring containment let "engineer"
+    # match inside "Engineering" (e.g. "B.Tech in Computer Science and
+    # Engineering"), silently discarding a real degree line as if it were
+    # job-description text. Word boundaries keep "Software Engineer" (an
+    # actual job-title fragment) filtered out while leaving "Engineering"
+    # (an academic field) alone.
+    if any(re.search(rf"\b{re.escape(marker)}\b", lower) for marker in noisy_markers):
         return False
 
     has_year = bool(re.search(r"\b(?:19|20)\d{2}\b", line))
@@ -63,6 +83,11 @@ def _parse_role_company(text):
     if "|" in value:
         parts = [p.strip() for p in value.split("|", 1)]
         return parts[0], parts[1] if len(parts) > 1 else ""
+    # Common resume format: "Role – Company" / "Role - Company", using an
+    # en dash, em dash, or hyphen as the separator.
+    dash_match = re.split(r"\s+[-–—]\s+", value, maxsplit=1)
+    if len(dash_match) == 2:
+        return dash_match[0].strip(), dash_match[1].strip()
     return value, ""
 
 
@@ -118,6 +143,20 @@ def _extract_date_range(text):
     return _normalize_month_year(match.group(1)), _normalize_month_year(match.group(2))
 
 
+def _strip_date_range(text):
+    """Remove a matched date-range substring from text, so it doesn't bleed
+    into a college/field value that shares a line with it (common with
+    PDF text extraction, where columns collapse onto one line)."""
+    month_piece = r"(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*"
+    date_piece = rf"(?:{month_piece}\s*(?:-|/)?\s*(?:19|20)\d{{2}}|(?:0?[1-9]|1[0-2])/(?:19|20)\d{{2}}|(?:19|20)\d{{2}})"
+    range_re = re.compile(
+        rf"({date_piece})\s*(?:-|–|to)\s*({date_piece}|Present|Current)",
+        re.IGNORECASE,
+    )
+    cleaned = range_re.sub("", text)
+    return re.sub(r"\s+", " ", cleaned).strip(" -–,")
+
+
 def _looks_like_contact_line(line):
     lower = line.lower()
     markers = ["email", "phone", "linkedin", "github", "portfolio", "@"]
@@ -160,9 +199,39 @@ def _extract_experience_from_lines(lines):
         re.IGNORECASE,
     )
     experience = []
+    # Lines already used to build an entry (either as the title/role line
+    # itself, or as a lookahead line that supplied the date range) must not
+    # be re-examined as the start of a *new* entry — otherwise a date range
+    # sitting on its own line (e.g. title on one line, "Jun 2023 - Aug 2023"
+    # on the next) gets matched twice: once via lookahead from the title
+    # line, and again when the loop naturally reaches the date line itself,
+    # which then falls back to the *same* previous line for role/company
+    # and manufactures a duplicate entry.
+    consumed_indices = set()
 
     for idx, line in enumerate(lines):
+        if idx in consumed_indices:
+            continue
+
         if _looks_like_contact_line(line):
+            continue
+
+        # A bullet/description line is never itself the start of a job
+        # entry — treating one as a candidate causes it to get stitched
+        # together with the *next* entry's title whenever that next line
+        # happens to carry the date range, producing a duplicate, garbled
+        # entry. Bullet text still gets picked up correctly as a
+        # `description` value by the entries that legitimately match below.
+        if re.match(r"^\s*[•\-\*]", line):
+            continue
+
+        # A bullet that wraps across two physical PDF lines only has the
+        # marker on its first line — the continuation line has none, but
+        # is still body text, not a new entry. Continuation lines almost
+        # always start mid-sentence (lowercase), while a real role/company
+        # title line starts capitalized — use that to filter it out too.
+        first_alpha = next((c for c in line if c.isalpha()), "")
+        if first_alpha and first_alpha.islower():
             continue
 
         candidate_line = line
@@ -174,6 +243,10 @@ def _extract_experience_from_lines(lines):
             used_next_line_for_range = bool(match)
         if not match:
             continue
+
+        consumed_indices.add(idx)
+        if used_next_line_for_range:
+            consumed_indices.add(idx + 1)
 
         from_date = match.group(1).strip()
         to_date = match.group(2).strip()
@@ -201,9 +274,68 @@ def _extract_experience_from_lines(lines):
         description = ""
         desc_idx = idx + 2 if used_next_line_for_range else idx + 1
         if desc_idx < len(lines):
-            next_line = lines[desc_idx].strip()
-            if next_line and len(next_line.split()) > 3 and len(next_line) < 180 and not _looks_like_contact_line(next_line):
-                description = next_line
+            first_desc_line = lines[desc_idx].strip()
+            if (
+                first_desc_line
+                and len(first_desc_line.split()) > 3
+                and not _looks_like_contact_line(first_desc_line)
+            ):
+                # Collect every bullet under this entry, not just the first.
+                # A bullet line (marker) or its wrapped continuation
+                # (starts lowercase, mid-sentence) is body text belonging
+                # to this job; keep consuming those. Stop only when we hit
+                # something that isn't body text for this entry: a blank
+                # or contact line, the next entry's date range, or a line
+                # that looks like a new entry's title (capitalized start,
+                # not a bullet, not a continuation).
+                first_is_bullet = bool(re.match(r"^\s*[•\-\*]", first_desc_line))
+                desc_entries = [(first_desc_line, first_is_bullet)]
+                consumed_indices.add(desc_idx)
+                scan_idx = desc_idx + 1
+                while scan_idx < len(lines):
+                    candidate = lines[scan_idx].strip()
+                    if not candidate or _looks_like_contact_line(candidate):
+                        break
+                    if range_re.search(candidate):
+                        break  # this line carries a date — it's the next entry
+                    is_bullet = bool(re.match(r"^\s*[•\-\*]", candidate))
+                    cand_first_alpha = next((c for c in candidate if c.isalpha()), "")
+                    is_continuation = bool(cand_first_alpha) and cand_first_alpha.islower()
+                    if not (is_bullet or is_continuation):
+                        # A wrapped bullet can resume with a capitalized
+                        # word (a tool/product name, e.g. "...a production-
+                        # ready" / "Streamlit dashboard..."), which looks
+                        # identical to a new entry's title line by
+                        # capitalization alone. Only treat it as a real
+                        # new entry — and stop — when it actually reads
+                        # like a job/education title; otherwise keep
+                        # accumulating it as body text.
+                        if _looks_like_job_text(candidate) or _looks_like_education_text(candidate):
+                            break
+
+                    desc_entries.append((candidate, is_bullet))
+                    consumed_indices.add(scan_idx)
+                    scan_idx += 1
+                    if sum(len(p) for p, _ in desc_entries) > 800:
+                        break
+
+                # Join distinct bullets with a newline (so downstream
+                # consumers like resume_generator.py's _split_bullets can
+                # still tell them apart and render a proper bullet list),
+                # but glue a wrapped continuation line onto the bullet it
+                # belongs to with a plain space.
+                pieces = []
+                for i, (text, starts_bullet) in enumerate(desc_entries):
+                    cleaned = re.sub(r"^[•\-\*]\s*", "", text).strip()
+                    if not cleaned:
+                        continue
+                    if i == 0:
+                        pieces.append(cleaned)
+                    elif starts_bullet:
+                        pieces.append("\n" + cleaned)
+                    else:
+                        pieces.append(" " + cleaned)
+                description = "".join(pieces).strip()
 
         if not company and description:
             desc_lower = description.lower()
@@ -227,9 +359,9 @@ def _extract_experience_from_lines(lines):
 
 def _infer_degree(line):
     lower = line.lower()
-    if "class xii" in lower or "higher secondary" in lower or "senior secondary" in lower:
+    if "class xii" in lower or "higher secondary" in lower or "senior secondary" in lower or "12th" in lower or "grade 12" in lower or "hsc" in lower:
         return "Senior Secondary"
-    if "class x" in lower or ("secondary" in lower and "senior" not in lower):
+    if "class x" in lower or "10th" in lower or "grade 10" in lower or "ssc" in lower or ("secondary" in lower and "senior" not in lower):
         return "Secondary"
     if "phd" in lower or "doctor" in lower:
         return "PhD"
@@ -279,7 +411,7 @@ def _extract_structured_education(edu_lines):
                 detail_lines.extend(chunk[1:])
 
         degree_line = next((ln for ln in detail_lines if _infer_degree(ln)), "")
-        degree = _infer_degree(degree_line) or "Bachelors"
+        degree = _infer_degree(degree_line)
 
         college = next(
             (ln for ln in detail_lines if any(k in ln.lower() for k in ["college", "university", "institute", "school"])),
@@ -363,21 +495,23 @@ def extract_education_experience(text):
             has_date_range = bool(edu_from or edu_to)
 
             if has_date_range and current_edu and (current_edu.get("field") or current_edu.get("college")):
-                if current_edu:
-                    education.append(current_edu)
+                education.append(current_edu)
                 current_edu = {
-                    "degree": degree or "Bachelors",
+                    "degree": degree,
                     "field": "",
                     "college": "",
                     "year": year,
                     "from": edu_from,
                     "to": edu_to,
                 }
-                continue
+                # Fall through (no `continue`) so this same line can still
+                # contribute its college/field text below — otherwise a line
+                # like "Our Own English High School... Mar 2021 – Apr 2022"
+                # would have its school name silently dropped.
 
             if not current_edu:
                 current_edu = {
-                    "degree": degree or "Bachelors",
+                    "degree": degree,
                     "field": "",
                     "college": "",
                     "year": year,
@@ -403,22 +537,24 @@ def extract_education_experience(text):
             if year and not current_edu["to"]:
                 current_edu["to"] = _normalize_month_year(year)
 
-            lower = line.lower()
+            cleaned_line = _strip_date_range(line) if has_date_range else line
+            lower = cleaned_line.lower()
+
             if any(k in lower for k in ["college", "university", "institute", "school"]) and not current_edu["college"]:
-                current_edu["college"] = line
+                current_edu["college"] = cleaned_line
                 continue
 
             if any(k in lower for k in ["cgpa", "gpa", "percentage", "%", "field", "major", "specialization"]) and not current_edu["field"]:
-                current_edu["field"] = line
+                current_edu["field"] = cleaned_line
                 continue
 
-            if _is_mostly_date_line(line):
+            if _is_mostly_date_line(cleaned_line):
                 continue
 
-            if not current_edu["field"] and len(line.split()) <= 18:
-                current_edu["field"] = line
-            elif not current_edu["college"] and len(line.split()) <= 18:
-                current_edu["college"] = line
+            if not current_edu["field"] and len(cleaned_line.split()) <= 18:
+                current_edu["field"] = cleaned_line
+            elif not current_edu["college"] and len(cleaned_line.split()) <= 18:
+                current_edu["college"] = cleaned_line
 
         if current_edu:
             education.append(current_edu)
@@ -433,7 +569,7 @@ def extract_education_experience(text):
             if not _looks_like_education_line(line):
                 continue
 
-            degree = _infer_degree(line) or "Bachelors"
+            degree = _infer_degree(line)
             year_match = year_re.search(line)
             year = year_match.group(0) if year_match else ""
             edu_from, edu_to = _extract_date_range(line)
@@ -499,9 +635,21 @@ def extract_basic_info(text):
     if loc_match:
         location = loc_match.group(1).strip()
 
+    linkedin = ""
+    linkedin_match = re.search(
+        r"(https?://)?(www\.)?linkedin\.com/in/[A-Za-z0-9\-_%]+/?",
+        text,
+        flags=re.IGNORECASE,
+    )
+    if linkedin_match:
+        linkedin = linkedin_match.group(0)
+        if not linkedin.lower().startswith("http"):
+            linkedin = "https://" + linkedin
+
     return {
         "name": name,
         "email": email_matches[0] if email_matches else "",
         "phone": phone,
         "location": location,
+        "linkedin": linkedin,
     }

@@ -1,4 +1,5 @@
 import json
+import os
 import numpy as np
 from sentence_transformers import SentenceTransformer
 from sklearn.metrics.pairwise import cosine_similarity
@@ -7,7 +8,8 @@ from job_redirect import generate_job_links
 
 model = SentenceTransformer('all-MiniLM-L6-v2')
 
-ROLE_PROFILE_PATH = r"E:\Capstone Project\role_profiles\role_skill_level_profiles.json"
+BASE_DIR = os.path.dirname(__file__)
+ROLE_PROFILE_PATH = os.path.join(BASE_DIR, "role_profiles", "role_skill_level_profiles.json")
 
 with open(ROLE_PROFILE_PATH, "r", encoding="utf-8") as f:
     ROLE_PROFILES = json.load(f)
@@ -17,30 +19,57 @@ WEIGHT_SKILL_OVERLAP = 0.35
 WEIGHT_ROLE_BONUS = 0.10
 
 
-def compute_semantic_similarity(candidate_skills, candidate_roles, candidate_tools, role_name, role_profile):
-    """
-    Compute semantic similarity using SBERT embeddings and cosine similarity.
-    
-    Formula: Similarity(A, B) = (A · B) / (||A|| * ||B||)
-    
-    where A = candidate embedding, B = role embedding
-    """
+def _build_role_text(role_name, role_profile):
     role_skills = role_profile["core_skills"] + role_profile.get("optional_skills", [])
+    return (
+        f"The {role_name} role requires strong capabilities in "
+        f"{', '.join(role_skills)}, including execution, coordination, and decision making."
+    )
 
-    candidate_text = (
+
+def _build_candidate_text(candidate_skills, candidate_roles, candidate_tools):
+    return (
         f"A candidate with strong experience in {', '.join(candidate_skills)}, "
         f"targeting roles such as {', '.join(candidate_roles) if candidate_roles else 'generalist positions'}, "
         f"and using tools like {', '.join(candidate_tools) if candidate_tools else 'standard tools'}, "
         f"demonstrating leadership, execution, problem-solving, and coordination."
     )
 
-    role_text = (
-        f"The {role_name} role requires strong capabilities in "
-        f"{', '.join(role_skills)}, including execution, coordination, and decision making."
-    )
 
-    candidate_embedding = model.encode(candidate_text)  # Dense vector
-    role_embedding = model.encode(role_text)  # Dense vector
+# Role embeddings only depend on ROLE_PROFILES, which is loaded once above
+# and never changes at runtime. Previously these were re-encoded via SBERT
+# on every single match_roles() call (and Streamlit reruns the whole script
+# on every UI interaction), so every dashboard render paid for N redundant
+# transformer inference calls. Precomputing them once here means later
+# calls to match_roles() only need to encode the candidate's text.
+_ROLE_EMBEDDINGS = {
+    role_name: model.encode(_build_role_text(role_name, role_profile))
+    for role_name, role_profile in ROLE_PROFILES.items()
+}
+
+
+def compute_semantic_similarity(candidate_skills, candidate_roles, candidate_tools, role_name, role_profile, candidate_embedding=None):
+    """
+    Compute semantic similarity using SBERT embeddings and cosine similarity.
+    
+    Formula: Similarity(A, B) = (A · B) / (||A|| * ||B||)
+    
+    where A = candidate embedding, B = role embedding
+
+    `candidate_embedding` lets a caller (match_roles) pass in an embedding
+    already computed once for this candidate, instead of re-encoding the
+    same candidate text for every role. The role embedding is looked up
+    from the module-level cache built once at import time; if a role isn't
+    in the cache for some reason, it's encoded on demand as a fallback.
+    """
+    candidate_text = _build_candidate_text(candidate_skills, candidate_roles, candidate_tools)
+
+    if candidate_embedding is None:
+        candidate_embedding = model.encode(candidate_text)  # Dense vector
+
+    role_embedding = _ROLE_EMBEDDINGS.get(role_name)
+    if role_embedding is None:
+        role_embedding = model.encode(_build_role_text(role_name, role_profile))  # Dense vector
 
     similarity = cosine_similarity(
         [candidate_embedding],
@@ -166,6 +195,9 @@ def match_roles(candidate_skills, candidate_roles=None, candidate_tools=None, ca
 
     recommendations = []
 
+    candidate_text = _build_candidate_text(candidate_skills, candidate_roles, candidate_tools)
+    candidate_embedding = model.encode(candidate_text)
+
     for role_name, role_profile in ROLE_PROFILES.items():
 
         semantic_similarity = compute_semantic_similarity(
@@ -173,7 +205,8 @@ def match_roles(candidate_skills, candidate_roles=None, candidate_tools=None, ca
             candidate_roles,
             candidate_tools,
             role_name,
-            role_profile
+            role_profile,
+            candidate_embedding=candidate_embedding
         )
 
         skill_overlap = compute_skill_overlap(candidate_skills, role_profile)
