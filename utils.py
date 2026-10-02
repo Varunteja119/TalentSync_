@@ -7,9 +7,40 @@ def _clean_lines(text):
         line = re.sub(r"\s+", " ", raw).strip()
         # Fix OCR/PDF extraction artifacts like "2025AI" -> "2025 AI"
         line = re.sub(r"((?:19|20)\d{2})([A-Za-z])", r"\1 \2", line)
+        # Fix another common PDF-column-collapse artifact: two
+        # visually-separated pieces of text (e.g. "(Data Science)" and
+        # "CGPA: 8.22") that were adjacent in the underlying PDF stream
+        # with no space, becoming "(Data Science)CGPA: 8.22" once
+        # extracted. A closing paren directly followed by an uppercase
+        # letter is a reliable signal this happened.
+        line = re.sub(r"(\))([A-Z])", r"\1 \2", line)
         if line:
             lines.append(line)
     return lines
+
+
+# Shared section-boundary vocabulary. Used both to bound where
+# education/experience sections end (extract_education_experience) and to
+# find/bound the summary section (_extract_summary) -- kept as one list so
+# the two extractors can't silently drift out of sync with each other.
+ALL_SECTION_KEYS = [
+    "EDUCATION",
+    "EDUCATIONAL QUALIFICATION",
+    "ACADEMIC QUALIFICATION",
+    "ACADEMICS",
+    "ACADEMIC",
+    "EXPERIENCE",
+    "PROFESSIONAL EXPERIENCE",
+    "WORK EXPERIENCE",
+    "WORK HISTORY",
+    "EMPLOYMENT",
+    "EMPLOYMENT HISTORY",
+    "PROJECT",
+    "SKILLS",
+    "CERTIFICATION",
+    "SUMMARY",
+    "PROFILE",
+]
 
 
 def _find_section(lines, section_keys, all_section_keys):
@@ -449,24 +480,7 @@ def _extract_structured_education(edu_lines):
 
 def extract_education_experience(text):
     lines = _clean_lines(text)
-    all_keys = [
-        "EDUCATION",
-        "EDUCATIONAL QUALIFICATION",
-        "ACADEMIC QUALIFICATION",
-        "ACADEMICS",
-        "ACADEMIC",
-        "EXPERIENCE",
-        "PROFESSIONAL EXPERIENCE",
-        "WORK EXPERIENCE",
-        "WORK HISTORY",
-        "EMPLOYMENT",
-        "EMPLOYMENT HISTORY",
-        "PROJECT",
-        "SKILLS",
-        "CERTIFICATION",
-        "SUMMARY",
-        "PROFILE",
-    ]
+    all_keys = ALL_SECTION_KEYS
 
     edu_lines = _find_section(
         lines,
@@ -604,6 +618,26 @@ def extract_education_experience(text):
     }
 
 
+def _extract_summary(text):
+    """Extract the resume's Professional Summary / Profile section as one
+    paragraph. Uses the same _find_section logic as education/experience,
+    so it's bounded correctly by whichever section comes next (Education,
+    Experience, Skills, etc.) rather than running on indefinitely."""
+    lines = _clean_lines(text)
+    summary_lines = _find_section(
+        lines,
+        ["SUMMARY", "PROFESSIONAL SUMMARY", "PROFILE", "CAREER SUMMARY", "OBJECTIVE"],
+        ALL_SECTION_KEYS,
+    )
+    if not summary_lines:
+        return ""
+
+    # A summary is prose, not a bullet list -- drop any bullet markers a
+    # resume might still use here and join into one paragraph.
+    cleaned = [re.sub(r"^[•\-\*]\s*", "", ln).strip() for ln in summary_lines]
+    return " ".join(ln for ln in cleaned if ln).strip()
+
+
 def extract_basic_info(text):
     email_matches = re.findall(r"[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}", text)
 
@@ -652,4 +686,5 @@ def extract_basic_info(text):
         "phone": phone,
         "location": location,
         "linkedin": linkedin,
+        "summary": _extract_summary(text),
     }

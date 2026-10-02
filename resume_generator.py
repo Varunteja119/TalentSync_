@@ -37,7 +37,6 @@ def convert_profile_to_resume_format(profile):
 
     return {
         "name": profile.get("name", ""),
-        "dob": profile.get("dob", ""),
         "phone": profile.get("phone", ""),
         "email": profile.get("email", ""),
         "location": profile.get("location", ""),
@@ -56,12 +55,19 @@ def convert_profile_to_resume_format(profile):
 def _set_global_style(doc):
     # ATS-safe styling: simple font, no tables, no columns, no text boxes.
     style = doc.styles["Normal"]
-    style.font.name = "Garamond"
-    style.element.rPr.rFonts.set(qn("w:ascii"), "Garamond")
-    style.element.rPr.rFonts.set(qn("w:hAnsi"), "Garamond")
-    style.element.rPr.rFonts.set(qn("w:eastAsia"), "Garamond")
-    style.element.rPr.rFonts.set(qn("w:cs"), "Garamond")
-    style.font.size = Pt(11)
+    style.font.name = "Arial"
+    style.element.rPr.rFonts.set(qn("w:ascii"), "Arial")
+    style.element.rPr.rFonts.set(qn("w:hAnsi"), "Arial")
+    style.element.rPr.rFonts.set(qn("w:eastAsia"), "Arial")
+    style.element.rPr.rFonts.set(qn("w:cs"), "Arial")
+    style.font.size = Pt(10.5)
+    style.paragraph_format.space_after = Pt(3)
+    style.paragraph_format.line_spacing = 1.0
+    for section in doc.sections:
+        section.top_margin = Pt(42)
+        section.bottom_margin = Pt(42)
+        section.left_margin = Pt(50)
+        section.right_margin = Pt(50)
 
 
 def _non_empty(values):
@@ -130,8 +136,13 @@ def _split_bullets(text):
 
 def _add_heading(doc, text):
     p = doc.add_paragraph()
-    run = p.add_run(text.upper())
+    p.paragraph_format.keep_with_next = True
+    p.paragraph_format.space_before = Pt(7)
+    p.paragraph_format.space_after = Pt(2)
+    run = p.add_run(text)
     run.bold = True
+    run.font.name = "Arial"
+    run.font.size = Pt(11)
 
     pPr = p._element.get_or_add_pPr()
     pBdr = OxmlElement("w:pBdr")
@@ -155,7 +166,6 @@ def _add_header(doc, data):
         [
             data.get("email", ""),
             data.get("phone", ""),
-            _format_date_value(data.get("dob", "")),
             data.get("location", ""),
             data.get("linkedin", ""),
             data.get("github", ""),
@@ -251,13 +261,28 @@ def _add_projects(doc, data):
         bullets = _split_bullets(proj.get("description", []))
         for bullet in bullets:
             doc.add_paragraph(bullet, style="List Bullet")
+        technologies = proj.get("technologies", proj.get("tools", []))
+        if technologies:
+            if isinstance(technologies, str):
+                tech_text = technologies.strip()
+            else:
+                tech_text = ", ".join(str(item).strip() for item in technologies if str(item).strip())
+            if tech_text:
+                p = doc.add_paragraph()
+                p.add_run("Technologies: ").bold = True
+                p.add_run(tech_text)
 
 
 def _add_education(doc, data):
     _add_heading(doc, "Education")
     for edu in data.get("education", []):
-        degree = edu.get("degree", "")
-        field = edu.get("field", "")
+        degree = str(edu.get("degree", "") or "").strip()
+        field = str(edu.get("field", "") or "").strip()
+        if degree and field:
+            dnorm = re.sub(r"[^a-z0-9]", "", degree.lower())
+            fnorm = re.sub(r"[^a-z0-9]", "", field.lower())
+            if dnorm and (dnorm in fnorm or fnorm in dnorm):
+                field = ""
         college = edu.get("college", "")
         date = _format_date_value(edu.get("date", ""))
 
@@ -289,6 +314,10 @@ def generate_resume(data, output_file="ats_resume.docx"):
     _add_projects(doc, data)
     _add_education(doc, data)
 
+    # Keep headings and entry titles attached to the following content.
+    for paragraph in doc.paragraphs:
+        if paragraph.runs and any(run.bold for run in paragraph.runs):
+            paragraph.paragraph_format.keep_with_next = True
     doc.save(output_file)
     print(f"ATS resume generated: {output_file}")
 

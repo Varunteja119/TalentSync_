@@ -9,3 +9,4 @@ pytesseract
 Pillow
 matplotlib
 groq
+requests

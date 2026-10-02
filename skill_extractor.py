@@ -28,6 +28,14 @@ BASE_DIR = os.path.dirname(__file__)
 def load_terms(file_name):
     """Load vocabulary from NER resource files"""
     path = os.path.join(BASE_DIR, "ner_resources", file_name)
+    if not os.path.isfile(path):
+        # Resource files are optional in lightweight deployments; the
+        # deterministic hint dictionaries below remain available.
+        fallback = os.path.join(BASE_DIR, file_name)
+        if file_name == "roles.txt" and os.path.isfile(fallback):
+            path = fallback
+        else:
+            return []
     with open(path, "r", encoding="utf-8") as f:
         return [line.strip().lower() for line in f if line.strip()]
 
@@ -37,21 +45,42 @@ ROLES = load_terms("roles.txt")
 TOOLS = load_terms("tools.txt")
 
 # ==========================================
-# Initialize spaCy NER Pipeline
+# spaCy NER Pipeline (loaded lazily -- see _get_nlp_and_matcher)
 # ==========================================
-try:
-    nlp = spacy.load("en_core_web_sm") if spacy else None
-except OSError:
-    print("[WARN] spaCy model not installed. Install with: python -m spacy download en_core_web_sm")
-    nlp = None
+# Previously `nlp = spacy.load(...)` and the PhraseMatcher setup ran at
+# module import time -- which happens the instant streamlit_app.py does
+# `from skill_extractor import extract_entities`, before any UI renders.
+# Combined with role_matcher.py's own eager SBERT load (now also fixed to
+# be lazy), this meant every app launch paid for loading a spaCy model
+# AND compiling ~240 phrase patterns (97 skills + 73 roles + 72 tools)
+# before the login page could even appear. Deferring both to first actual
+# use means the app itself opens instantly; the one-time cost still
+# happens, just at the first real extract_entities() call instead of at
+# import time.
+_nlp = None
+_matcher = None
+_nlp_load_attempted = False
 
-# Initialize PhraseMatcher for NER entity extraction
-matcher = None
-if nlp:
-    matcher = PhraseMatcher(nlp.vocab, attr="LOWER")
-    matcher.add("SKILL", [nlp.make_doc(s) for s in SKILLS])
-    matcher.add("ROLE", [nlp.make_doc(r) for r in ROLES])
-    matcher.add("TOOL", [nlp.make_doc(t) for t in TOOLS])
+
+def _get_nlp_and_matcher():
+    global _nlp, _matcher, _nlp_load_attempted
+    if _nlp_load_attempted:
+        return _nlp, _matcher
+    _nlp_load_attempted = True
+
+    if not spacy:
+        return None, None
+    try:
+        _nlp = spacy.load("en_core_web_sm")
+    except OSError:
+        print("[WARN] spaCy model not installed. Install with: python -m spacy download en_core_web_sm")
+        return None, None
+
+    _matcher = PhraseMatcher(_nlp.vocab, attr="LOWER")
+    _matcher.add("SKILL", [_nlp.make_doc(s) for s in SKILLS])
+    _matcher.add("ROLE", [_nlp.make_doc(r) for r in ROLES])
+    _matcher.add("TOOL", [_nlp.make_doc(t) for t in TOOLS])
+    return _nlp, _matcher
 
 # 🔥 Skill Inference Rules (fallback when NER misses patterns)
 INFERENCE_RULES = {
@@ -85,7 +114,22 @@ SKILL_HINTS = {
     "kubernetes": ["kubernetes", "k8s"],
     "ci/cd": ["ci/cd", "cicd", "jenkins", "gitlab ci", "github actions"],
     "sql": ["sql", "mysql", "postgresql", "postgres"],
-    "machine learning": ["machine learning", "ml", "scikit-learn", "tensorflow", "pytorch"],
+    # NOTE: the bare "ml" pattern was removed on purpose. It used to be
+    # boundary-matched against things like "AI/ML:" (a section-header
+    # abbreviation meaning "AI and ML" as an umbrella label), which
+    # silently inferred a "machine learning" skill for candidates who
+    # never actually stated it -- e.g. a resume whose AI/ML line only
+    # lists RAG, LLM Integration, NLP, Semantic Search, Prompt
+    # Engineering, MCP (no ML methodology at all). That false positive
+    # inflated skill_overlap for ML/NLP-adjacent roles in role_matcher.py
+    # to the same 1.0 as a role the candidate is actually a precise match
+    # for (e.g. Generative AI Engineer), erasing the very signal that's
+    # supposed to differentiate them. "scikit-learn" alone is similarly
+    # weak (often used for a non-ML data pipeline), so a real "machine
+    # learning" skill now requires one of the stronger, harder-to-fake
+    # signals below -- the literal phrase, or a deep-learning-specific
+    # framework name.
+    "machine learning": ["machine learning", "tensorflow", "pytorch"],
     "account reconciliation": ["account reconciliation", "reconciliation"],
     "accounts payable": ["accounts payable", "ap process"],
     "general ledger accounting": ["general ledger", "ledger accounting"],
@@ -105,7 +149,9 @@ ROLE_HINTS = {
     "full stack developer": ["full stack", "frontend and backend"],
     "devops engineer": ["devops", "site reliability", "sre"],
     "data analyst": ["data analyst", "business analyst"],
-    "data scientist": ["data scientist", "ai engineer", "ml engineer"],
+    # Keep AI/ML Engineer titles from being generalized into Data Scientist.
+    # A data-science role should be inferred from an explicit title only.
+    "data scientist": ["data scientist"],
     "accounts executive": ["accounts executive", "accountant", "finance executive"],
 }
 
@@ -191,6 +237,7 @@ def _extract_entities_ner(text: str):
     PRIMARY METHOD: Extract entities using spaCy NER (PhraseMatcher)
     This is the NER algorithm used in the project
     """
+    nlp, matcher = _get_nlp_and_matcher()
     if not matcher or not nlp:
         return {"skills": [], "roles": [], "tools": []}
 
@@ -454,6 +501,29 @@ def _extract_entities_llm(text: str):
     }
 
 
+def _normalize_entity_categories(entities):
+    """Deduplicate and prevent known tools/roles from leaking into skills."""
+    clean = {}
+    for key in ("skills", "roles", "tools"):
+        vals = entities.get(key, []) or []
+        clean[key] = sorted({re.sub(r"\s+", " ", str(v)).strip().lower() for v in vals if str(v).strip()})
+    # Explicit tool vocabulary and hint aliases take precedence over generic skill labels.
+    tool_terms = set(TOOLS) | set(TOOL_HINTS)
+    tool_terms.update(alias.lower() for aliases in TOOL_HINTS.values() for alias in aliases)
+    def norm(v):
+        return re.sub(r"[^a-z0-9]+", "", v.lower())
+    tool_norms = {norm(t) for t in tool_terms}
+    role_norms = {norm(r) for r in ROLES} | {norm(r) for r in ROLE_HINTS}
+    clean["tools"] = sorted(set(clean["tools"]))
+    tool_norms.update(norm(t) for t in clean["tools"])
+    clean["skills"] = [v for v in clean["skills"] if norm(v) not in tool_norms and norm(v) not in role_norms]
+    clean["roles"] = [v for v in clean["roles"] if norm(v) not in tool_norms]
+    # Exact overlaps are assigned to the most specific category.
+    skill_norms = {norm(v) for v in clean["skills"]}
+    clean["roles"] = [v for v in clean["roles"] if norm(v) not in skill_norms]
+    return clean
+
+
 def extract_entities(text: str):
     # Algorithm: Build final entities by merging NER-first extraction with fallback keyword/inference extraction.
     """
@@ -522,4 +592,19 @@ def extract_entities(text: str):
             "tools": sorted(set(merged["tools"] + llm_results.get("tools", []))),
         }
 
-    return merged
+    # Guard against an LLM (or a broad vocabulary match) treating an umbrella
+    # heading such as "AI/ML Engineer" as proof of machine-learning practice.
+    # Keep the skill only when the resume contains an explicit methodology
+    # phrase or a concrete ML framework. Bare "ML" in a section/title is not
+    # enough evidence by itself; this avoids inflating ML/NLP core-skill overlap.
+    explicit_ml_evidence = any(
+        _contains_term(text.lower(), term)
+        for term in ("machine learning", "tensorflow", "pytorch")
+    )
+    if not explicit_ml_evidence:
+        merged["skills"] = [
+            skill for skill in merged["skills"]
+            if skill.lower() != "machine learning"
+        ]
+
+    return _normalize_entity_categories(merged)

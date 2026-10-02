@@ -31,3 +31,44 @@ frontend developer
 full stack developer
 intern
 project engineer
+
+accounts executive
+finance operations analyst
+compliance analyst
+payroll and hr operations executive
+risk and audit analyst
+erp support analyst
+business systems analyst
+junior data analyst
+project operations coordinator
+operations and compliance lead
+operations manager
+project coordinator
+network engineer
+ai engineer
+machine learning engineer
+iot engineer
+logistics manager
+security manager
+operations executive
+program manager
+team lead
+field operations manager
+supply chain manager
+maintenance manager
+risk manager
+compliance officer
+technical support engineer
+software developer
+data scientist
+ai research engineer
+generative ai engineer
+llm application engineer
+ai automation engineer
+nlp engineer
+generative ai intern
+ai automation engineer intern
+machine learning intern
+ai intern
+data science intern
+nlp intern

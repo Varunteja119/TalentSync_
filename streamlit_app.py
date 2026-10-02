@@ -1,25 +1,50 @@
 import streamlit as st
 import os
+import json
+import re
 import datetime
 from auth import login, signup, update_profile
-from utils import extract_basic_info, extract_education_experience
-from text_extractor import extract_text
-from resume_generator import generate_resume, convert_profile_to_resume_format
+import importlib
+
+# Load feature-specific modules only when their functionality is first used.
+# This keeps the initial login render from importing NLP/ML and document tooling.
+def _lazy_call(module_name, function_name, *args, **kwargs):
+    module = importlib.import_module(module_name)
+    return getattr(module, function_name)(*args, **kwargs)
+
+def extract_basic_info(*args, **kwargs):
+    return _lazy_call("utils", "extract_basic_info", *args, **kwargs)
+
+def extract_education_experience(*args, **kwargs):
+    return _lazy_call("utils", "extract_education_experience", *args, **kwargs)
+
+def extract_text(*args, **kwargs):
+    return _lazy_call("text_extractor", "extract_text", *args, **kwargs)
+
+def generate_resume(*args, **kwargs):
+    return _lazy_call("resume_generator", "generate_resume", *args, **kwargs)
+
+def convert_profile_to_resume_format(*args, **kwargs):
+    return _lazy_call("resume_generator", "convert_profile_to_resume_format", *args, **kwargs)
+
+def extract_entities(*args, **kwargs):
+    return _lazy_call("skill_extractor", "extract_entities", *args, **kwargs)
+
+def match_roles(*args, **kwargs):
+    return _lazy_call("role_matcher", "match_roles", *args, **kwargs)
+
+def run_pipeline(*args, **kwargs):
+    return _lazy_call("pipeline", "run_pipeline", *args, **kwargs)
 
 try:
-    from skill_extractor import extract_entities
+    import job_redirect
 except Exception:
-    extract_entities = None
+    job_redirect = None
 
 try:
-    from role_matcher import match_roles
+    from jobs_for_you import render_jobs_for_you
 except Exception:
-    match_roles = None
-
-try:
-    from pipeline import run_pipeline
-except Exception:
-    run_pipeline = None
+    render_jobs_for_you = None
 
 # =========================
 # PAGE CONFIG
@@ -132,35 +157,163 @@ if "logged_in" not in st.session_state:
     st.session_state.logged_in = False
 if "view" not in st.session_state:
     st.session_state.view = "Dashboard"
+if "workspace_nav" not in st.session_state:
+    st.session_state.workspace_nav = st.session_state.view
 if "username" not in st.session_state:
     st.session_state.username = ""
 if "profile_edit_mode" not in st.session_state:
     st.session_state.profile_edit_mode = False
 
 
-def safe_match_roles(skills, roles, tools):
-    if callable(match_roles):
-        try:
-            return match_roles(skills, roles, tools)
-        except Exception:
-            return []
+def safe_match_roles(skills, roles, tools, location="", experience=None):
+    """Return cached role matches so page navigation doesn't rerun SBERT."""
+
+    # Include all inputs that affect the matcher. Dashboard and Role Matches
+    # can then reuse the same result, while profile/experience edits invalidate it.
+    cache_key = json.dumps(
+        {
+            "skills": skills or [],
+            "roles": roles or [],
+            "tools": tools or [],
+            "location": location or "",
+            "experience": experience,
+        },
+        sort_keys=True,
+        default=str,
+    )
+    cache = st.session_state.setdefault("_role_match_cache", {})
+    if cache_key in cache:
+        return cache[cache_key]
+
+    try:
+        if not st.session_state.get("_matcher_warmed_up"):
+            with st.spinner("Loading the matching model (first time only, can take a minute)..."):
+                result = match_roles(
+                    skills or [], roles or [], tools or [],
+                    candidate_location=location,
+                    candidate_experience=experience,
+                )
+            st.session_state["_matcher_warmed_up"] = True
+        else:
+            result = match_roles(
+                skills or [], roles or [], tools or [],
+                candidate_location=location,
+                candidate_experience=experience,
+            )
+        # Cache only successful results; keep memory bounded for edited profiles.
+        if result is not None:
+            cache[cache_key] = result
+            while len(cache) > 4:
+                cache.pop(next(iter(cache)))
+            return result
+    except Exception as exc:
+        st.warning(f"Role matching couldn't be completed: {exc}")
     return []
 
+def _sync_workspace_view():
+    """Keep the rendered page aligned with the keyed sidebar radio."""
+    st.session_state.view = st.session_state.workspace_nav
+
+
+def _navigate_workspace(view_name):
+    """Programmatic navigation, invoked as a widget callback before rerun."""
+    st.session_state.workspace_nav = view_name
+    st.session_state.view = view_name
+
+
 def logout_user():
-    for key in ["logged_in", "profile", "view", "username", "profile_edit_mode"]:
+    for key in ["logged_in", "profile", "view", "workspace_nav", "username", "profile_edit_mode"]:
         st.session_state.pop(key, None)
     st.session_state.logged_in = False
     st.session_state.view = "Dashboard"
+
+
+def render_experience_selector(profile, scope):
+    """One experience-level selector per page (not per role).
+
+    Defaults to a level estimated from the resume's experience dates; the
+    user can override it. Returns the JSearch job_requirements value, or
+    None for "any experience" / when live listings aren't available.
+    """
+    if job_redirect is None or not job_redirect.live_listings_configured():
+        return None
+
+    labels = list(job_redirect.EXPERIENCE_LEVELS.keys())
+    years = job_redirect.estimate_experience_years(profile.get("experience", []))
+    default_label = job_redirect.suggest_experience_label(years)
+    choice = st.selectbox(
+        "Experience level for live openings",
+        labels,
+        index=labels.index(default_label),
+        key=f"live_exp_{scope}",
+        help=(
+            f"Suggested from your resume: about {years:.1f} years of experience. "
+            "Job boards only offer these buckets (there is no exact 0-2 years), "
+            "and postings that don't state requirements may be filtered out."
+        ),
+    )
+    return job_redirect.EXPERIENCE_LEVELS[choice]
+
+
+def render_live_listings(role, location, key, experience=None):
+    """On-demand live job listings for ONE role.
+
+    Deliberately button-triggered: the live API is slow (up to ~45s) and the
+    free tier is 200 requests/month, so it must never fire automatically for
+    every role on every Streamlit rerun. Results are cached in job_redirect.
+    The experience level is part of the state key, so changing the level
+    closes old results and requires a fresh click rather than silently
+    re-fetching every role that was already opened.
+    """
+    if job_redirect is None or not job_redirect.live_listings_configured():
+        return
+
+    state_key = f"live_open_{key}_{experience}"
+    if st.button("Show live openings", key=f"live_btn_{key}_{experience}"):
+        st.session_state[state_key] = True
+
+    if st.session_state.get(state_key):
+        with st.spinner("Fetching live listings (can take up to ~45s)..."):
+            jobs = job_redirect.fetch_live_job_listings(
+                role, location or "UAE", experience=experience
+            )
+        if jobs:
+            st.write("**Open roles right now:**")
+            for job in jobs:
+                company_part = f" @ {job['company']}" if job.get("company") else ""
+                location_part = f" ({job['location']})" if job.get("location") else ""
+                st.markdown(f"- [{job['title']}{company_part}]({job['url']}){location_part}")
+        else:
+            reason = job_redirect.LAST_ERROR
+            if reason:
+                msg = f"No live listings came back. ({reason}) Click the button again to retry."
+            elif experience:
+                msg = ("No openings matched this experience filter right now. "
+                       "Try 'Any experience', or use the search links below.")
+            else:
+                msg = "No live listings came back. Try the search links below."
+            st.caption(msg)
+            # Failures aren't cached, so leaving the flag on would re-fetch
+            # (another wait and another credit) on EVERY Streamlit rerun.
+            # Require an explicit click to try again.
+            st.session_state[state_key] = False
 
 
 def render_dashboard(profile):
     display_username = st.session_state.get("username", profile.get("name", "Candidate"))
     st.subheader(f"Welcome back, {display_username}")
 
+    # Experience selector runs BEFORE matching (not after, as it did
+    # originally) so the chosen level can actually inform the job_links
+    # baked into each recommendation, not just the on-demand live listings.
+    live_experience = render_experience_selector(profile, "dash")
+
     recommendation_data = safe_match_roles(
         profile.get("skills", []),
         profile.get("roles", []),
         profile.get("tools", []),
+        location=profile.get("location", ""),
+        experience=live_experience,
     )
 
     total_skills = len(profile.get("skills", []))
@@ -208,6 +361,7 @@ def render_dashboard(profile):
                     st.write("**Matched core skills:** " + ", ".join(rec["matched_core_skills"]))
                 if rec.get("matched_optional_skills"):
                     st.write("**Matched optional skills:** " + ", ".join(rec["matched_optional_skills"]))
+                render_live_listings(rec["role"], profile.get("location", ""), f"dash_{rec['role']}", live_experience)
                 st.markdown(f"[Apply on LinkedIn]({rec['job_links']['linkedin']})")
 
     with right_col:
@@ -221,8 +375,11 @@ def render_dashboard(profile):
         st.write(f"**Education entries:** {len(profile.get('education', []))}")
         st.write(f"**Experience entries:** {len(profile.get('experience', []))}")
 
-        if st.button("Open Resume Builder"):
-            st.session_state.view = "Resume Builder"
+        st.button(
+            "Open Resume Builder",
+            on_click=_navigate_workspace,
+            args=("Resume Builder",),
+        )
 
 
 def render_profile_view(profile):
@@ -355,6 +512,7 @@ def render_profile_view(profile):
                 "linkedin": linkedin,
                 "education": edited_education,
                 "experience": edited_experience,
+                "projects": profile.get("projects", []),
                 "skills": merged_skills,
                 "roles": merged_roles,
                 "tools": merged_tools,
@@ -455,10 +613,18 @@ def render_profile_view(profile):
 
 def render_matches_view(profile):
     st.subheader("Role Matches")
+
+    # Experience selector runs BEFORE matching (not after, as it did
+    # originally) so the chosen level can actually inform the job_links
+    # baked into each recommendation, not just the on-demand live listings.
+    live_experience = render_experience_selector(profile, "match")
+
     recommendation_data = safe_match_roles(
         profile.get("skills", []),
         profile.get("roles", []),
         profile.get("tools", []),
+        location=profile.get("location", ""),
+        experience=live_experience,
     )
 
     for rec in recommendation_data:
@@ -489,6 +655,7 @@ def render_matches_view(profile):
                 st.write("**Matched core skills:** " + ", ".join(rec["matched_core_skills"]))
             if rec.get("matched_optional_skills"):
                 st.write("**Matched optional skills:** " + ", ".join(rec["matched_optional_skills"]))
+            render_live_listings(rec["role"], profile.get("location", ""), f"match_{rec['role']}", live_experience)
             st.markdown(f"[LinkedIn Apply Link]({rec['job_links']['linkedin']})")
 
 
@@ -504,7 +671,6 @@ def render_resume_tools(profile):
         contact_parts = [
             formatted_data.get("email", ""),
             formatted_data.get("phone", ""),
-            formatted_data.get("dob", ""),
             formatted_data.get("location", ""),
             formatted_data.get("linkedin", ""),
             formatted_data.get("github", ""),
@@ -543,9 +709,9 @@ def render_resume_tools(profile):
                     ]
                     if bullets:
                         for bullet in bullets:
-                            st.write(f"- {bullet}")
+                            st.markdown(f"- {bullet}")
                     else:
-                        st.write(f"- {desc}")
+                        st.markdown(f"- {desc}")
                 st.write("")
         else:
             st.write("No experience entries yet.")
@@ -559,9 +725,65 @@ def render_resume_tools(profile):
                 date = edu.get("date", "")
                 degree_line = f"{degree} in {field}" if degree and field else (degree or field)
                 line = " | ".join([p for p in [degree_line, college, date] if str(p).strip()])
-                st.write(f"- {line}")
+                st.markdown(f"- {line}")
         else:
             st.write("No education entries yet.")
+
+        st.markdown("#### Projects")
+        projects = formatted_data.get("projects", []) or []
+        if projects:
+            for project in projects:
+                if isinstance(project, dict):
+                    project_name = str(project.get("name") or project.get("title") or "Project").strip()
+                    if project_name:
+                        st.markdown(f"**{project_name}**")
+                    description = project.get("description", "")
+                    if isinstance(description, list):
+                        for bullet in description:
+                            if str(bullet).strip():
+                                st.markdown(f"- {str(bullet).strip()}")
+                    elif str(description).strip():
+                        for bullet in str(description).splitlines():
+                            if bullet.strip():
+                                st.markdown(f"- {bullet.strip().lstrip('-•* ')}")
+                    technologies = project.get("technologies", project.get("tools", []))
+                    if technologies:
+                        tech_text = technologies if isinstance(technologies, str) else ", ".join(map(str, technologies))
+                        st.caption(f"Technologies: {tech_text}")
+                elif str(project).strip():
+                    st.markdown(f"- {project}")
+        else:
+            st.write("No projects added yet. Add projects below to include them in your ATS resume.")
+
+    st.markdown("### Manage Resume Projects")
+    existing_projects = profile.get("projects", []) or []
+    with st.form("resume_projects_form"):
+        project_count = st.number_input(
+            "Number of projects", min_value=0, max_value=10,
+            value=min(len(existing_projects), 10), step=1, key="resume_project_count"
+        )
+        edited_projects = []
+        for i in range(int(project_count)):
+            current = existing_projects[i] if i < len(existing_projects) and isinstance(existing_projects[i], dict) else {}
+            st.markdown(f"**Project {i + 1}**")
+            project_name = st.text_input("Project name", value=current.get("name", current.get("title", "")), key=f"resume_project_name_{i}")
+            project_description = st.text_area("Description / achievements (one per line)", value=current.get("description", "") if isinstance(current.get("description", ""), str) else "\n".join(map(str, current.get("description", []))), key=f"resume_project_description_{i}")
+            project_technologies = current.get("technologies", current.get("tools", []))
+            if not isinstance(project_technologies, str):
+                project_technologies = ", ".join(map(str, project_technologies or []))
+            technologies = st.text_input("Technologies (comma-separated)", value=project_technologies, key=f"resume_project_technologies_{i}")
+            edited_projects.append({"name": project_name.strip(), "description": project_description.strip(), "technologies": [x.strip() for x in technologies.split(",") if x.strip()]})
+        save_projects = st.form_submit_button("Save Projects to Resume")
+
+    if save_projects:
+        updated_profile = dict(profile)
+        updated_profile["projects"] = [project for project in edited_projects if project["name"] or project["description"] or project["technologies"]]
+        if update_profile(st.session_state.username, updated_profile):
+            st.session_state.profile = updated_profile
+            st.success("Projects saved. They will be included in the resume preview and generated DOCX.")
+            st.rerun()
+        else:
+            st.error("Could not save projects. Please log in again and retry.")
 
     if st.button("Generate ATS Resume"):
         file_path = "ats_resume.docx"
@@ -580,13 +802,20 @@ st.sidebar.title("Navigation")
 if st.session_state.logged_in:
     sidebar_username = st.session_state.get("username", "User")
     st.sidebar.success(f"Signed in as {sidebar_username}")
-    st.session_state.view = st.sidebar.radio(
+    workspace_pages = ["Dashboard", "Profile", "Role Matches", "Jobs for You", "Resume Builder"]
+    # A dedicated widget key prevents radio state from drifting away from the
+    # page selector used below. The callback synchronizes state before rerun.
+    if st.session_state.workspace_nav not in workspace_pages:
+        st.session_state.workspace_nav = "Dashboard"
+    selected_view = st.sidebar.radio(
         "Workspace",
-        ["Dashboard", "Profile", "Role Matches", "Resume Builder"],
-        index=["Dashboard", "Profile", "Role Matches", "Resume Builder"].index(st.session_state.view)
-        if st.session_state.view in ["Dashboard", "Profile", "Role Matches", "Resume Builder"]
-        else 0,
+        workspace_pages,
+        key="workspace_nav",
+        on_change=_sync_workspace_view,
     )
+    # Keep page routing tied to the radio's returned value; avoid writing back
+    # to the radio's own keyed state during the same render.
+    st.session_state.view = selected_view
     if st.sidebar.button("🚪 Logout"):
         logout_user()
         st.rerun()
@@ -622,11 +851,12 @@ if not st.session_state.logged_in:
             st.markdown("### Welcome Back")
             menu = st.radio("Access", ["Login", "Signup"], horizontal=True)
 
-            col1, col2 = st.columns(2)
-            with col1:
-                username = st.text_input("Username")
-            with col2:
-                password = st.text_input("Password", type="password")
+            if menu == "Login":
+                col1, col2 = st.columns(2)
+                with col1:
+                    username = st.text_input("Username")
+                with col2:
+                    password = st.text_input("Password", type="password")
 
 # =========================
 # LOGIN
@@ -693,7 +923,12 @@ if not st.session_state.logged_in:
                 extracted = {"skills": [], "roles": [], "tools": []}
                 if callable(extract_entities):
                     try:
-                        extracted = extract_entities(text)
+                        if not st.session_state.get("_nlp_warmed_up"):
+                            with st.spinner("Loading NLP model (first time only)..."):
+                                extracted = extract_entities(text)
+                            st.session_state["_nlp_warmed_up"] = True
+                        else:
+                            extracted = extract_entities(text)
                     except Exception:
                         extracted = {"skills": [], "roles": [], "tools": []}
 
@@ -731,10 +966,12 @@ if not st.session_state.logged_in:
         linkedin = st.text_input("LinkedIn", basic.get("linkedin", ""))
         summary = st.text_area(
             "Professional Summary",
-            value="",
+            value=basic.get("summary", ""),
             placeholder="Add a profile summary (optional). If left empty, resume generator will auto-create one.",
         )
-        raw_skills = st.text_area("Skills", ", ".join(extracted["skills"]))
+        raw_skills = st.text_area("Skills / Competencies", ", ".join(extracted["skills"]), key="signup_skills")
+        raw_roles = st.text_input("Target Roles", ", ".join(extracted["roles"]), key="signup_roles")
+        raw_tools = st.text_input("Tools / Platforms", ", ".join(extracted["tools"]), key="signup_tools")
 
         st.markdown("### 🎓 Education")
         prefilled_education = extracted_edu_exp.get("education", [])
@@ -809,11 +1046,16 @@ if not st.session_state.logged_in:
         # Roles/tools are kept from the full-resume extraction above, since
         # there's no equivalent editable field for them pre-signup and a
         # short comma-separated skills string won't contain role/tool terms.
-        manual_skills = [s.strip() for s in raw_skills.split(",") if s.strip()] if raw_skills else []
+        def parse_terms(value):
+            return list(dict.fromkeys(part.strip() for part in re.split(r"[,;\n|]", value or "") if part.strip()))
+
+        manual_skills = parse_terms(raw_skills)
+        manual_roles = parse_terms(raw_roles)
+        manual_tools = parse_terms(raw_tools)
         entities = {
-            "skills": sorted(set(manual_skills + extracted.get("skills", []))),
-            "roles": extracted.get("roles", []),
-            "tools": extracted.get("tools", []),
+            "skills": manual_skills,
+            "roles": manual_roles,
+            "tools": manual_tools,
         }
 
         # Always build profile (no conditional)
@@ -832,9 +1074,23 @@ if not st.session_state.logged_in:
             "tools": entities["tools"]
         }
 
-        if st.button("🚀 Signup"):
-            if not profile:
-                st.error("Fill details first ❌")
+        st.markdown("---")
+        # Keep credential entry inside a form so typing does not trigger a
+        # Streamlit rerun on every keystroke. The profile fields above remain
+        # independently editable and are read from the current session state.
+        with st.form("signup_credentials_form", clear_on_submit=False):
+            cred_col1, cred_col2 = st.columns(2)
+            with cred_col1:
+                username = st.text_input("Choose a Username", key="signup_username")
+            with cred_col2:
+                password = st.text_input("Choose a Password", type="password", key="signup_password")
+            signup_submitted = st.form_submit_button("🚀 Signup")
+
+        if signup_submitted:
+            if not username.strip() or not password.strip():
+                st.error("Please enter a username and password above before signing up ❌")
+            elif not name.strip():
+                st.error("Please fill in at least your name before signing up ❌")
             else:
                 if signup(username, password, profile):
                     st.success("Account created successfully ✅")
@@ -859,5 +1115,10 @@ if st.session_state.logged_in:
         render_profile_view(profile)
     elif st.session_state.view == "Role Matches":
         render_matches_view(profile)
+    elif st.session_state.view == "Jobs for You":
+        if render_jobs_for_you is not None:
+            render_jobs_for_you(profile, safe_match_roles, render_live_listings, job_redirect)
+        else:
+            st.error("Jobs for You page could not be loaded. Ensure jobs_for_you.py is in the app directory.")
     elif st.session_state.view == "Resume Builder":
         render_resume_tools(profile)
