@@ -39,7 +39,14 @@ def evaluate_single_case(test_case):
         test_case["tools"],
     )
 
+    expected_rank = test_case["expected_rank"]
+    # expected_rank None marks a NEGATIVE case: the expected role should NOT be recommended.
+    # For those, the role being absent is the correct outcome (same rule as validation_test_suite.py).
+    negative_case = expected_rank is None
+
     if not recommendations:
+        if negative_case:
+            return "PASSED", None, None
         return "SKIPPED", None, None
 
     expected_lower = test_case["expected_role"].lower()
@@ -50,10 +57,11 @@ def evaluate_single_case(test_case):
     ]
 
     if not matching_recs:
+        if negative_case:
+            return "PASSED", None, None
         return "FAILED", None, recommendations[0]["role"] if recommendations else None
 
     rank, rec = matching_recs[0]
-    expected_rank = test_case["expected_rank"]
 
     if expected_rank is None:
         # desired behavior: expected role should not be highly ranked

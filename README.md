@@ -8,7 +8,7 @@ This project exists to demonstrate applied NLP/ML engineering: entity extraction
 
 - **Hybrid entity extraction, not a single method.** spaCy NER (`PhraseMatcher` over a curated vocabulary) runs first; a keyword/regex fallback with context-inference rules catches what NER misses; an LLM-based open-vocabulary extraction step (Groq/LLaMA) only fires as a last resort when the first two are still thin. Each tier is faster and cheaper than the next, so the expensive path only runs when it's actually needed.
 - **Hybrid semantic + symbolic scoring, not pure vibes-based LLM ranking.** Role fit is a weighted combination of SBERT cosine similarity (semantic fit), literal skill-overlap ratio (symbolic, explainable), and a role-match bonus — each with a documented formula and rationale, not a black-box prompt.
-- **An actual evaluation methodology.** `validation_test_suite.py` runs labeled test cases against the matcher and reports pass/partial/fail rates; `sensitivity_analysis.py` sweeps the scoring formula's weight configuration across multiple combinations and reports which setting performs best, with results written to a JSON report and visualized via `graph.py`. This is the same validate → tune → re-validate loop used for any ML system's hyperparameters — the current 0.55 / 0.35 / 0.10 weighting isn't a guess, it's the sensitivity analysis's own baseline.
+- **An actual evaluation methodology.** `validation_test_suite.py` runs labeled test cases against the matcher and reports pass/partial/fail rates; `sensitivity_analysis.py` sweeps the scoring formula's weight configuration across multiple combinations and reports which setting performs best, with results written to a JSON report and visualized via `graph.py`. This is the same validate → tune → re-validate loop used for any ML system's hyperparameters — on the 21-case suite the current 0.55 / 0.35 / 0.10 weighting sits on a plateau (7 of 9 swept configurations tie at 90.5%, the two skill-heavy ones score 88.1%), so the sweep supports these weights without sharply identifying them.
 - **Engineering discipline beyond the ML pieces.** Passwords are hashed with PBKDF2-HMAC-SHA256 with transparent migration of any legacy plaintext account on next login; resume parsing has dedicated unit-style test coverage for its regex/heuristic edge cases; performance-sensitive paths (like SBERT embeddings) are cached rather than recomputed per request.
 
 ## How it works
@@ -57,7 +57,7 @@ Sweep multiple weight configurations and see which performs best on the same tes
 py -3.12 sensitivity_analysis.py
 ```
 
-This writes `sensitivity_report.json`, which `graph.py` turns into a set of comparison charts (validation outcome breakdown, top weight configurations, spot-check performance, failure reason distribution).
+This writes `sensitivity_report.json`, which `graph.py` turns into comparison charts (validation outcome breakdown and top weight configurations). Two further charts, spot-check performance and failure reasons, are drawn only when a `spot_check_report.json` from a real-resume spot check is present; no script in this repo generates it, so `graph.py` skips them otherwise.
 
 ## Run locally
 
