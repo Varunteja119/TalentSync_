@@ -1,0 +1,150 @@
+{
+  "A pretrained + current": {
+    "suite": {
+      "shipped": 0.8095238095238095,
+      "best_of_grid": 0.9285714285714286,
+      "loo_tuned": 0.9285714285714286
+    },
+    "corrected": {
+      "shipped": 0.9047619047619048,
+      "best_of_grid": 0.9285714285714286,
+      "loo_tuned": 0.9047619047619048
+    }
+  },
+  "B fine-tuned + current": {
+    "suite": {
+      "shipped": 0.8095238095238095,
+      "best_of_grid": 0.9285714285714286,
+      "loo_tuned": 0.9285714285714286
+    },
+    "corrected": {
+      "shipped": 0.9047619047619048,
+      "best_of_grid": 0.9285714285714286,
+      "loo_tuned": 0.9047619047619048
+    }
+  },
+  "C fine-tuned + compact": {
+    "suite": {
+      "shipped": 0.8095238095238095,
+      "best_of_grid": 0.9285714285714286,
+      "loo_tuned": 0.9285714285714286
+    },
+    "corrected": {
+      "shipped": 0.9047619047619048,
+      "best_of_grid": 0.9285714285714286,
+      "loo_tuned": 0.9047619047619048
+    }
+  },
+  "D pretrained + compact": {
+    "suite": {
+      "shipped": 0.8333333333333334,
+      "best_of_grid": 0.9523809523809523,
+      "loo_tuned": 0.9523809523809523
+    },
+    "corrected": {
+      "shipped": 0.9285714285714286,
+      "best_of_grid": 0.9523809523809523,
+      "loo_tuned": 0.9285714285714286
+    }
+  },
+  "paired": [
+    {
+      "a": "B fine-tuned + current",
+      "b": "A pretrained + current",
+      "basis": "as shipped",
+      "mean_diff": 0.0,
+      "lo": 0.0,
+      "hi": 0.0,
+      "n": 21,
+      "significant": false
+    },
+    {
+      "a": "B fine-tuned + current",
+      "b": "A pretrained + current",
+      "basis": "LOO-tuned",
+      "mean_diff": 0.0,
+      "lo": 0.0,
+      "hi": 0.0,
+      "n": 21,
+      "significant": false
+    },
+    {
+      "a": "C fine-tuned + compact",
+      "b": "D pretrained + compact",
+      "basis": "as shipped",
+      "mean_diff": -0.023809523809523808,
+      "lo": -0.07142857142857142,
+      "hi": 0.0,
+      "n": 21,
+      "significant": false
+    },
+    {
+      "a": "C fine-tuned + compact",
+      "b": "D pretrained + compact",
+      "basis": "LOO-tuned",
+      "mean_diff": -0.023809523809523808,
+      "lo": -0.07142857142857142,
+      "hi": 0.0,
+      "n": 21,
+      "significant": false
+    },
+    {
+      "a": "D pretrained + compact",
+      "b": "A pretrained + current",
+      "basis": "as shipped",
+      "mean_diff": 0.023809523809523808,
+      "lo": 0.0,
+      "hi": 0.07142857142857142,
+      "n": 21,
+      "significant": false
+    },
+    {
+      "a": "D pretrained + compact",
+      "b": "A pretrained + current",
+      "basis": "LOO-tuned",
+      "mean_diff": 0.023809523809523808,
+      "lo": 0.0,
+      "hi": 0.07142857142857142,
+      "n": 21,
+      "significant": false
+    },
+    {
+      "a": "C fine-tuned + compact",
+      "b": "A pretrained + current",
+      "basis": "as shipped",
+      "mean_diff": 0.0,
+      "lo": 0.0,
+      "hi": 0.0,
+      "n": 21,
+      "significant": false
+    },
+    {
+      "a": "C fine-tuned + compact",
+      "b": "A pretrained + current",
+      "basis": "LOO-tuned",
+      "mean_diff": 0.0,
+      "lo": 0.0,
+      "hi": 0.0,
+      "n": 21,
+      "significant": false
+    }
+  ],
+  "behaviour": {
+    "A pretrained + current": {
+      "median_recs": 6.0,
+      "max_top_score_negative": 0.5777
+    },
+    "B fine-tuned + current": {
+      "median_recs": 6.0,
+      "max_top_score_negative": 0.6507
+    },
+    "C fine-tuned + compact": {
+      "median_recs": 6.0,
+      "max_top_score_negative": 0.6998
+    },
+    "D pretrained + compact": {
+      "median_recs": 6.0,
+      "max_top_score_negative": 0.6615
+    }
+  }
+}

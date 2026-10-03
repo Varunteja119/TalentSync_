@@ -1,0 +1,118 @@
+{
+  "n_files": 1031,
+  "n_unparseable": 0,
+  "schema_variants": {
+    "top": 1,
+    "input": 1,
+    "output": 1
+  },
+  "groups": {
+    "empty_additional_info": 40,
+    "invalid_gibberish_job_description_match": 14,
+    "invalid_gibberish_job_description_mismatch": 1,
+    "invalid_gibberish_resume_match": 12,
+    "invalid_gibberish_resume_mismatch": 3,
+    "invalid_job_description_match": 43,
+    "invalid_job_description_mismatch": 14,
+    "invalid_resume_match": 42,
+    "invalid_resume_mismatch": 13,
+    "match": 648,
+    "mismatch": 201
+  },
+  "unique": {
+    "files_with_text": 1021,
+    "resumes": 237,
+    "jds": 89,
+    "pairs": 771,
+    "mixed_group_resumes": 94
+  },
+  "scores": {
+    "empty_additional_info": {
+      "n": 40,
+      "n_macro": 40,
+      "n_micro": 40,
+      "macro_mean": 5.607,
+      "micro_mean": 5.396
+    },
+    "invalid_gibberish_job_description_match": {
+      "n": 14,
+      "n_macro": 0,
+      "n_micro": 0,
+      "macro_mean": null,
+      "micro_mean": null
+    },
+    "invalid_gibberish_job_description_mismatch": {
+      "n": 1,
+      "n_macro": 0,
+      "n_micro": 0,
+      "macro_mean": null,
+      "micro_mean": null
+    },
+    "invalid_gibberish_resume_match": {
+      "n": 12,
+      "n_macro": 0,
+      "n_micro": 0,
+      "macro_mean": null,
+      "micro_mean": null
+    },
+    "invalid_gibberish_resume_mismatch": {
+      "n": 3,
+      "n_macro": 0,
+      "n_micro": 0,
+      "macro_mean": null,
+      "micro_mean": null
+    },
+    "invalid_job_description_match": {
+      "n": 43,
+      "n_macro": 0,
+      "n_micro": 0,
+      "macro_mean": null,
+      "micro_mean": null
+    },
+    "invalid_job_description_mismatch": {
+      "n": 14,
+      "n_macro": 0,
+      "n_micro": 0,
+      "macro_mean": null,
+      "micro_mean": null
+    },
+    "invalid_resume_match": {
+      "n": 42,
+      "n_macro": 0,
+      "n_micro": 0,
+      "macro_mean": null,
+      "micro_mean": null
+    },
+    "invalid_resume_mismatch": {
+      "n": 13,
+      "n_macro": 0,
+      "n_micro": 0,
+      "macro_mean": null,
+      "micro_mean": null
+    },
+    "match": {
+      "n": 648,
+      "n_macro": 648,
+      "n_micro": 648,
+      "macro_mean": 6.116,
+      "micro_mean": 4.643
+    },
+    "mismatch": {
+      "n": 201,
+      "n_macro": 201,
+      "n_micro": 201,
+      "macro_mean": 4.458,
+      "micro_mean": 3.5
+    }
+  },
+  "len_resume": {
+    "median": 3256,
+    "max": 36942
+  },
+  "len_jd": {
+    "median": 1711,
+    "max": 19703
+  },
+  "tok_over_resume": 0.948,
+  "tok_over_jd": 0.797
+}

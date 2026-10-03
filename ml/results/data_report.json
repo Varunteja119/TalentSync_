@@ -1,0 +1,105 @@
+{
+  "usable": 851,
+  "dropped": {
+    "valid_flag_not_true": 35,
+    "no_scores": 142,
+    "missing_text": 3
+  },
+  "coverage": {
+    "resume_compact non-empty": 1.0,
+    "resume has 'Skills:'": 0.9882491186839013,
+    "resume has 'Experience:'": 0.9717978848413631,
+    "resume has 'Summary:'": 1.0,
+    "jd_compact non-empty": 1.0,
+    "jd has 'Role:'": 1.0,
+    "jd has 'Key criteria:'": 1.0,
+    "jd has 'Requirements:'": 1.0
+  },
+  "tokens": {
+    "resume_raw": {
+      "median": 729,
+      "over": 0.965
+    },
+    "resume_compact": {
+      "median": 108.5,
+      "over": 0.0
+    },
+    "jd_raw": {
+      "median": 313.5,
+      "over": 0.808
+    },
+    "jd_compact": {
+      "median": 62.0,
+      "over": 0.0
+    }
+  },
+  "components": {
+    "n": 2,
+    "top": [
+      848,
+      3
+    ]
+  },
+  "splits": {
+    "resume": {
+      "train": {
+        "pairs": 681,
+        "resumes": 117,
+        "jds": 20
+      },
+      "val": {
+        "pairs": 85,
+        "resumes": 41,
+        "jds": 19
+      },
+      "test": {
+        "pairs": 85,
+        "resumes": 41,
+        "jds": 20
+      },
+      "resume_overlap_train_test": 0,
+      "jd_overlap_train_test": 15,
+      "dropped": 0
+    },
+    "component": {
+      "train": {
+        "pairs": 848,
+        "resumes": 196,
+        "jds": 25
+      },
+      "val": {
+        "pairs": 3,
+        "resumes": 3,
+        "jds": 1
+      },
+      "test": {
+        "pairs": 0,
+        "resumes": 0,
+        "jds": 0
+      },
+      "resume_overlap_train_test": 0,
+      "jd_overlap_train_test": 0,
+      "dropped": 0
+    },
+    "strict": {
+      "train": {
+        "pairs": 434,
+        "resumes": 157,
+        "jds": 20
+      },
+      "val": {
+        "pairs": 23,
+        "resumes": 11,
+        "jds": 3
+      },
+      "test": {
+        "pairs": 14,
+        "resumes": 8,
+        "jds": 2
+      },
+      "resume_overlap_train_test": 0,
+      "jd_overlap_train_test": 0,
+      "dropped": 380
+    }
+  }
+}

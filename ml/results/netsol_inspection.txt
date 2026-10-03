@@ -1,0 +1,121 @@
+
+==============================================================================
+SOURCE: saptarshideveloper/resume-score-details
+C:\Users\varun\.cache\huggingface\hub\datasets--saptarshideveloper--resume-score-details\snapshots\4df24e5f1660acbbd684c2eeb81f473064c278c0
+==============================================================================
+JSON files parsed: 1031   unparseable: 0
+
+==============================================================================
+SCHEMA VARIANTS (why load_dataset failed)
+==============================================================================
+
+  top-level keys: 1 variant(s)
+     1031 x ['details', 'input', 'output']
+
+  input keys: 1 variant(s)
+     1031 x ['additional_info', 'job_description', 'macro_dict', 'micro_dict', 'minimum_requirements', 'resume']
+
+  output keys: 1 variant(s)
+     1031 x ['justification', 'personal_info', 'scores', 'valid_resume_and_jd']
+
+==============================================================================
+FILE-NAME GROUPS vs DATASET CARD
+==============================================================================
+  match                          648
+  mismatch                       201
+  invalid_job_description_match  43
+  invalid_resume_match           42
+  empty_additional_info          40
+  invalid_gibberish_job_description_match 14
+  invalid_job_description_mismatch 14
+  invalid_resume_mismatch        13
+  invalid_gibberish_resume_match 12
+  invalid_gibberish_resume_mismatch 3
+  invalid_gibberish_job_description_mismatch 1
+
+  Dataset card says: {'mismatched': 201, 'matched': 648, 'invalid': 142, 'missing additional info': 40, 'total': 1031}
+  (If your group counts differ a lot from the card, this copy is not identical.)
+
+  valid_resume_and_jd values: {'True': 854, 'False': 177}
+  files containing a personal_info block (contents NOT printed): 889
+
+==============================================================================
+UNIQUE RESUMES / JDs  (GROUP KEY for splitting)
+==============================================================================
+  files with both resume and JD text: 1021/1031
+  unique resumes: 237   unique JDs: 89   unique (resume,JD) pairs: 771
+  files-per-resume distribution: {1: 82, 2: 25, 3: 19, 4: 15, 5: 14, 6: 14, 7: 14, 8: 16, 9: 13, 10: 12, 11: 6, 12: 5, 14: 1, 15: 1}
+  files-per-JD distribution:     {1: 55, 2: 9, 3: 4, 4: 8, 17: 1, 47: 1, 55: 1, 68: 1, 70: 1, 77: 3, 78: 1, 81: 1, 83: 1, 85: 1, 89: 1}
+  resumes that appear under more than one file-name group: 94
+  >> Resumes repeat across files. Split by resume hash, NOT by file, or the test set leaks.
+  >> JDs repeat across files. Group by JD too (connected components of resume/JD) to be safe.
+
+==============================================================================
+AGGREGATED GPT-4o SCORES BY GROUP
+==============================================================================
+
+  [empty_additional_info]  files=40  with macro=40  with micro=40
+    macro: min=2.00 mean=5.61 max=9.00  {'p10': 3.0, 'p25': 3.55, 'p50': 5.45, 'p75': 7.0, 'p90': 8.02}
+    micro: min=1.00 mean=5.40 max=9.00  {'p10': 3.0, 'p25': 3.58, 'p50': 5.74, 'p75': 6.88, 'p90': 8.09}
+
+  [invalid_gibberish_job_description_match]  files=14  with macro=0  with micro=0
+
+  [invalid_gibberish_job_description_mismatch]  files=1  with macro=0  with micro=0
+
+  [invalid_gibberish_resume_match]  files=12  with macro=0  with micro=0
+
+  [invalid_gibberish_resume_mismatch]  files=3  with macro=0  with micro=0
+
+  [invalid_job_description_match]  files=43  with macro=0  with micro=0
+
+  [invalid_job_description_mismatch]  files=14  with macro=0  with micro=0
+
+  [invalid_resume_match]  files=42  with macro=0  with micro=0
+
+  [invalid_resume_mismatch]  files=13  with macro=0  with micro=0
+
+  [match]  files=648  with macro=648  with micro=648
+    macro: min=0.00 mean=6.12 max=9.55  {'p10': 3.5, 'p25': 5.0, 'p50': 6.31, 'p75': 7.46, 'p90': 8.17}
+    micro: min=0.00 mean=4.64 max=9.85  {'p10': 1.72, 'p25': 3.0, 'p50': 4.73, 'p75': 6.4, 'p90': 7.41}
+
+  [mismatch]  files=201  with macro=201  with micro=201
+    macro: min=0.00 mean=4.46 max=8.88  {'p10': 1.3, 'p25': 3.0, 'p50': 4.57, 'p75': 6.04, 'p90': 7.46}
+    micro: min=0.00 mean=3.50 max=9.00  {'p10': 1.0, 'p25': 1.84, 'p50': 3.1, 'p75': 5.04, 'p90': 6.66}
+
+  What to look for: do match-groups score clearly higher than mismatch-groups?
+  Is there overlap (hard cases) or a clean gap (easy task)? A clean gap means the
+  baseline will likely score high already and hard-negative mining matters more.
+
+==============================================================================
+TEXT LENGTHS (chars)
+==============================================================================
+  resume: n=1021 median=3256 p95=9611 max=36942
+  job description: n=1031 median=1711 p95=2501 max=19703
+
+==============================================================================
+TOKEN LENGTH CHECK (all-MiniLM-L6-v2)
+==============================================================================
+  max_seq_length = 256
+  resume: median=599 tokens, max=24173, 95% exceed 256 and would be truncated
+  job description: median=316 tokens, max=12897, 80% exceed 256 and would be truncated
+
+==============================================================================
+ONE STRUCTURAL SAMPLE (no resume text, no personal info)
+==============================================================================
+  file: empty_additional_info_0.json
+  macro_dict (criteria weights): {'leadership': 34, 'technical expertise': 66}
+  micro_dict (criteria weights): {'project management': 43, 'installation and commissioning': 57}
+  aggregated_scores: {'macro_scores': 9.0, 'micro_scores': 9.0}
+  JD (first 200 chars): ## Job Title: Senior Electrical Engineering Project Lead    **Company Overview:**   Join XYZ Engineering Inc., a leading firm in electrical project management and automation solutions, recognized for 
+  details keys: ['name', 'number', 'skills', 'email_id', 'location', 'projects', 'education', 'achievements', 'publications', 'certifications', 'additional_urls', 'executive_summary', 'employment_history']
+
+==============================================================================
+WHAT THIS DECIDES
+==============================================================================
+  1. Group key for splits: resume hash (and JD hash if JDs repeat).
+  2. Relevance labels: aggregated macro/micro scores (graded) + match/mismatch group.
+  3. If match-vs-mismatch scores barely overlap, the in-distribution test is easy; the
+     human-labeled Natalia set and the in-app validation suite carry the real evidence.
+  4. Never commit the raw data or resume text (personal info). Commit only metrics.
+
+Saved: ml\results\netsol_inspection.txt and ml\results\netsol_inspection.json

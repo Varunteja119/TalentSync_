@@ -1,0 +1,71 @@
+
+==============================================================================
+LOAD
+==============================================================================
+  usable pairs: 851   dropped: {'valid_flag_not_true': 35, 'no_scores': 142, 'missing_text': 3}
+  relevance (mean(macro,micro)/10): mean=0.519 median=0.531
+  label groups: {'other': 39, 'match': 635, 'mismatch': 177}
+  unique resumes=199  unique JDs=26
+
+==============================================================================
+COMPACT VIEW COVERAGE (how often the structured fields yielded text)
+==============================================================================
+  resume_compact non-empty     100.0%
+  resume has 'Skills:'          98.8%
+  resume has 'Experience:'      97.2%
+  resume has 'Summary:'        100.0%
+  jd_compact non-empty         100.0%
+  jd has 'Role:'               100.0%
+  jd has 'Key criteria:'       100.0%
+  jd has 'Requirements:'       100.0%
+  employment_history[0] keys (names only): ['company_name', 'details', 'end_date', 'job_title', 'location', 'start_date']
+  projects[0] keys (names only):           ['description', 'title']
+
+==============================================================================
+TOKEN LENGTHS: raw vs compact (all-MiniLM-L6-v2, max_seq_length=256)
+==============================================================================
+  resume_raw      median=   729 max= 24173 over_256= 96.5%
+  resume_compact  median=   108 max=   193 over_256=  0.0%
+  jd_raw          median=   314 max=   429 over_256= 80.8%
+  jd_compact      median=    62 max=   116 over_256=  0.0%
+
+==============================================================================
+CONNECTED COMPONENTS of the resume<->JD graph
+==============================================================================
+  components: 2   largest sizes (pairs): [848, 3]
+  largest component holds 99.6% of all pairs
+  >> One giant component: 'component' split cannot give a real test set. Use 'resume' (honest about JD sharing) and/or 'strict' (drops pairs).
+
+==============================================================================
+SPLIT STRATEGIES (seed=42)
+==============================================================================
+
+  mode = resume   (pairs dropped to avoid leakage: 0)
+    train pairs= 681  resumes=117  JDs= 20  top-JD share=11.0%  mean rel=0.533
+    val   pairs=  85  resumes= 41  JDs= 19  top-JD share=21.2%  mean rel=0.453
+    test  pairs=  85  resumes= 41  JDs= 20  top-JD share=20.0%  mean rel=0.472
+    resume overlap train&test=0  JD overlap train&test=15
+
+  mode = component   (pairs dropped to avoid leakage: 0)
+    train pairs= 848  resumes=196  JDs= 25  top-JD share= 9.2%  mean rel=0.520
+    val   pairs=   3  resumes=  3  JDs=  1  top-JD share=100.0%  mean rel=0.399
+    test  pairs=   0  resumes=  0  JDs=  0  top-JD share= 0.0%  mean rel=nan
+    resume overlap train&test=0  JD overlap train&test=0
+
+  mode = strict   (pairs dropped to avoid leakage: 380)
+    train pairs= 434  resumes=157  JDs= 20  top-JD share=14.3%  mean rel=0.511
+    val   pairs=  23  resumes= 11  JDs=  3  top-JD share=52.2%  mean rel=0.523
+    test  pairs=  14  resumes=  8  JDs=  2  top-JD share=57.1%  mean rel=0.539
+    resume overlap train&test=0  JD overlap train&test=0
+
+==============================================================================
+HOW TO READ THIS
+==============================================================================
+  - Prefer a mode where resume overlap is 0. If JD overlap stays >0 ('resume' mode), say so in the
+    README: the test measures generalisation to unseen resumes, not unseen JDs.
+  - A split whose val/test has only a handful of resumes or JDs gives noisy metrics; check the counts.
+  - Watch 'top-JD share': if one JD dominates the test split, retrieval metrics collapse to that JD.
+  - If 'strict' keeps enough pairs and all three splits have a reasonable JD count, it is the most
+    defensible headline number; otherwise report 'resume' mode with the JD caveat.
+
+Saved: ml\results\data_report.txt and ml\results\data_report.json

@@ -1,0 +1,17 @@
+
+==============================================================================
+RANK JDs PER RESUME  (seed 42; sanity: first two rows should match baseline_cv)
+==============================================================================
+  | model | pairwise | spearman | top1 | n |
+  |---|---|---|---|---|
+  | pretrained cosine (raw) | 0.579 [0.534, 0.623] | 0.158 [0.058, 0.256] | 0.244 [0.176, 0.321] | 131 |
+  | JD prior only | 0.693 [0.648, 0.733] | 0.419 [0.327, 0.505] | 0.313 [0.237, 0.389] | 131 |
+  | hybrid (prior + 0.5 x centered cosine) | 0.725 [0.682, 0.766] | 0.429 [0.336, 0.518] | 0.389 [0.305, 0.473] | 131 |
+  | hybrid (prior + 1.0 x centered cosine) | 0.718 [0.675, 0.760] | 0.418 [0.325, 0.508] | 0.397 [0.313, 0.481] | 131 |
+  | hybrid (prior + 2.0 x centered cosine) | 0.692 [0.652, 0.732] | 0.387 [0.299, 0.472] | 0.389 [0.305, 0.473] | 131 |
+  | random (chance) | 0.500 [0.496, 0.504] | -0.002 [-0.011, 0.006] | 0.218 [0.196, 0.240] | 131 |
+  
+
+  (No --oof given: compare the hybrid rows with the fine-tuned numbers from train_cv unpaired, i.e. by overlapping CIs only. Pass --oof for a paired test.)
+
+Saved: ml\results\hybrid_seed42.md / .json

@@ -109,8 +109,8 @@ Open the URL shown in the terminal (`http://localhost:8501` by default).
 
 ## Roadmap
 
-- **Fine-tuned matching model.** The current SBERT model (`all-MiniLM-L6-v2`) is used as-is, off the shelf. Planned: fine-tune a bi-encoder on labeled resume-role match/mismatch pairs, evaluate it against the pretrained baseline on a held-out set (Recall@K, MRR, NDCG), and swap it into `role_matcher.py` if it measurably outperforms — the actual "I trained and evaluated a model" deliverable, not just "I called an API."
-- **Real-time job listings.** `job_redirect.py` currently generates job-search query URLs. Planned: swap in a live job-search API (Adzuna or JSearch) for real, current listings instead of static search links.
+- **Fine-tuned matching model (evaluated, not adopted).** I fine-tuned a MiniLM bi-encoder on 851 GPT-4o-scored resume-JD pairs and benchmarked it with grouped cross-validation, a human-labeled held-out set and this repo's validation suite. It improved JD-ranking accuracy in cross-validation (pairwise 0.58 -> 0.74-0.78), but about two-thirds of that gain is reproducible by a per-JD score lookup and it did not transfer to the app, so `all-MiniLM-L6-v2` remains the default. See [`ml/README.md`](ml/README.md).
+- **Live job listings (implemented).** `jobs_for_you.py` fetches current listings from the JSearch API; `job_redirect.py` still generates job-search links.
 
 ## Notes
 
@@ -119,4 +119,4 @@ Open the URL shown in the terminal (`http://localhost:8501` by default).
 
 ---
 
-TalentSync is a working demonstration of a hybrid NLP/ML resume-matching pipeline, built to be extended toward a genuinely fine-tuned model as the next milestone.
+TalentSync is a working demonstration of a hybrid NLP/ML resume-matching pipeline. A fine-tuned bi-encoder was trained and benchmarked against the pretrained baseline; the evaluation is documented in [`ml/README.md`](ml/README.md).

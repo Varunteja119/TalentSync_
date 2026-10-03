@@ -1,0 +1,26 @@
+
+==============================================================================
+RANK JDs PER RESUME  (seed 43; sanity: first two rows should match baseline_cv)
+==============================================================================
+  | model | pairwise | spearman | top1 | n |
+  |---|---|---|---|---|
+  | pretrained cosine (raw) | 0.579 [0.534, 0.623] | 0.158 [0.058, 0.256] | 0.244 [0.176, 0.321] | 131 |
+  | JD prior only | 0.705 [0.661, 0.744] | 0.456 [0.368, 0.534] | 0.321 [0.244, 0.397] | 131 |
+  | hybrid (prior + 0.5 x centered cosine) | 0.705 [0.659, 0.745] | 0.407 [0.303, 0.500] | 0.366 [0.282, 0.450] | 131 |
+  | hybrid (prior + 1.0 x centered cosine) | 0.706 [0.663, 0.744] | 0.410 [0.321, 0.496] | 0.397 [0.305, 0.489] | 131 |
+  | hybrid (prior + 2.0 x centered cosine) | 0.665 [0.625, 0.708] | 0.337 [0.238, 0.424] | 0.344 [0.260, 0.427] | 131 |
+  | random (chance) | 0.500 [0.496, 0.504] | -0.002 [-0.011, 0.006] | 0.218 [0.196, 0.240] | 131 |
+  | fine-tuned (epoch 3, seed 43) | 0.741 [0.696, 0.779] | 0.515 [0.431, 0.591] | 0.382 [0.290, 0.466] | 131 |
+  
+
+==============================================================================
+PAIRED: fine-tuned (epoch 3, seed 43)  minus  hybrid (prior + 1.0 x centered cosine)   (* = CI excludes 0)
+==============================================================================
+  * pairwise  +0.035 [+0.003, +0.067]  n=128
+  * spearman  +0.105 [+0.037, +0.173]  n=131
+    top1      -0.015 [-0.099, +0.076]  n=131
+
+  CI includes 0  -> fine-tuning is no better than pretrained cosine + per-JD offset.
+  CI above 0     -> fine-tuning learned something beyond a JD offset.
+
+Saved: ml\results\hybrid_seed43.md / .json

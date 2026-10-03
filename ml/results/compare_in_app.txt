@@ -1,0 +1,101 @@
+
+==============================================================================
+SETUP: 21 test cases, 39 roles, negative cases (expected_rank=None): ['Complete Mismatch - Accountant vs Backend', 'Low Information Profile']
+==============================================================================
+
+==============================================================================
+SEMANTIC SCALE (mean cosine over all case x role pairs; shows why thresholds need re-tuning)
+==============================================================================
+  A pretrained + current     mean=0.386  p10=0.262  p90=0.537  share >= 0.25: 93%
+  B fine-tuned + current     mean=0.578  p10=0.470  p90=0.698  share >= 0.25: 100%
+  C fine-tuned + compact     mean=0.642  p10=0.537  p90=0.760  share >= 0.25: 100%
+  D pretrained + compact     mean=0.448  p10=0.310  p90=0.621  share >= 0.25: 99%
+
+==============================================================================
+REPLICATION CHECK (my grid code vs the real match_roles at the app's own settings)
+==============================================================================
+  A pretrained + current     identical rankings in 21/21 cases
+  B fine-tuned + current     identical rankings in 21/21 cases
+  C fine-tuned + compact     identical rankings in 21/21 cases
+  D pretrained + compact     identical rankings in 21/21 cases
+
+==============================================================================
+EFFECTIVENESS, scoring = suite
+==============================================================================
+  | config | as shipped | best-of-grid (optimistic) | LOO-tuned |
+  |---|---|---|---|
+  | A pretrained + current | 81.0% | 92.9% | 92.9% |
+  | B fine-tuned + current | 81.0% | 92.9% | 92.9% |
+  | C fine-tuned + compact | 81.0% | 92.9% | 92.9% |
+  | D pretrained + compact | 83.3% | 95.2% | 95.2% |
+  
+
+==============================================================================
+EFFECTIVENESS, scoring = corrected
+==============================================================================
+  | config | as shipped | best-of-grid (optimistic) | LOO-tuned |
+  |---|---|---|---|
+  | A pretrained + current | 90.5% | 92.9% | 90.5% |
+  | B fine-tuned + current | 90.5% | 92.9% | 90.5% |
+  | C fine-tuned + compact | 90.5% | 92.9% | 90.5% |
+  | D pretrained + compact | 92.9% | 95.2% | 92.9% |
+  
+
+==============================================================================
+BEHAVIOUR AS SHIPPED (what a user would see)
+==============================================================================
+  | config | median # recs per case | top final score on negative cases (max) |
+  |---|---|---|
+  | A pretrained + current | 6 | 58% |
+  | B fine-tuned + current | 6 | 65% |
+  | C fine-tuned + compact | 6 | 70% |
+  | D pretrained + compact | 6 | 66% |
+  
+
+==============================================================================
+EXPECTED-ROLE RANK PER CASE AS SHIPPED ('-' = not recommended)
+==============================================================================
+  case                                          exp    A    B    C    D
+  Perfect Match - Software Engineer               1    1    1    1    1
+  Perfect Match - Data Scientist                  1    2    2    4    4
+  Perfect Match - Full Stack Developer            1    1    1    1    1
+  Perfect Match - DevOps Engineer                 1    1    1    1    1
+  Perfect Match - Accounts Executive              1    1    1    1    1
+  Cross-Domain - Military to Backend              5    -    -    -    -
+  Cross-Domain - Military to Data Analysis        5    1    1    1    1
+  Partial Match - Junior Software Dev            10    2    3    2    2
+  Complete Mismatch - Accountant vs Backend    none    -    -    -    -
+  Multi-skilled - Full Stack Developer            2    2    2    1    1
+  Perfect Match - Backend Developer               1    1    1    1    1
+  Perfect Match - Software Developer              1    1    1    1    1
+  Perfect Match - Data Analyst                    1    1    1    1    1
+  Perfect Match - Machine Learning Engineer       1    1    1    1    1
+  Perfect Match - Technical Support Engineer      1    1    1    1    1
+  Perfect Match - Operations Manager              1    1    1    1    1
+  Perfect Match - Compliance Officer              1    3    3    2    1
+  Perfect Match - Team Lead                       1    1    1    1    1
+  Cross-Domain - Support to DevOps                8    1    1    1    1
+  Cross-Domain - Finance to Data Analyst          6    1    1    1    1
+  Low Information Profile                      none    -    -    -    -
+
+==============================================================================
+PAIRED DIFFERENCES over the 21 cases, corrected scoring (mean diff [95% CI]; * = CI excludes 0)
+==============================================================================
+    B - A  model effect, current template     as shipped +0.000 [+0.000, +0.000]
+    B - A  model effect, current template     LOO-tuned  +0.000 [+0.000, +0.000]
+    C - D  model effect, compact template     as shipped -0.024 [-0.071, +0.000]
+    C - D  model effect, compact template     LOO-tuned  -0.024 [-0.071, +0.000]
+    D - A  template effect, pretrained        as shipped +0.024 [+0.000, +0.071]
+    D - A  template effect, pretrained        LOO-tuned  +0.024 [+0.000, +0.071]
+    C - A  best new vs shipped                as shipped +0.000 [+0.000, +0.000]
+    C - A  best new vs shipped                LOO-tuned  +0.000 [+0.000, +0.000]
+
+==============================================================================
+DECISION RULE (fixed in advance)
+==============================================================================
+  Switch the app default to the fine-tuned model ONLY if, on LOO-tuned corrected scoring, a fine-tuned
+  configuration beats A (what ships today) with a paired CI above 0 AND no safety regression
+  (negative cases must not recommend the wrong role at a high score). Otherwise keep pretrained as the
+  default and publish the fine-tuned model as an opt-in flag with these results in the README.
+
+Saved: C:\Users\varun\TalentSync_cleanup\ml\results\compare_in_app.md / .json

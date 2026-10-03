@@ -240,6 +240,18 @@ def run_validation_suite():
                 test_case['tools']
             )
             
+            if not recommendations and test_case['expected_rank'] is None:
+                # Correct outcome for a negative case: nothing recommended, so the unwanted role is absent
+                print(f"✓ PASSED: no recommendations generated ({test_case['expected_role']} correctly absent)")
+                results["passed"] += 1
+                results["details"].append({
+                    "test": test_case['name'],
+                    "status": "PASSED",
+                    "reason": "correctly absent (no recommendations)"
+                })
+                print()
+                continue
+
             if not recommendations:
                 print("❌ SKIPPED: No recommendations generated")
                 results["skipped"] += 1
@@ -258,7 +270,16 @@ def run_validation_suite():
                 if expected_lower in rec['role'].lower()
             ]
             
-            if not matching_recs:
+            if not matching_recs and test_case['expected_rank'] is None:
+                # Correct outcome for a negative case: the role that should NOT match is absent
+                print(f"✓ PASSED: '{test_case['expected_role']}' correctly absent from recommendations")
+                results["passed"] += 1
+                results["details"].append({
+                    "test": test_case['name'],
+                    "status": "PASSED",
+                    "reason": "correctly absent"
+                })
+            elif not matching_recs:
                 # Role not in results at all
                 print(f"❌ FAILED: '{test_case['expected_role']}' not in recommendations")
                 print(f"   Top 3 recommendations:")

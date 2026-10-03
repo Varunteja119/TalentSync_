@@ -42,3 +42,10 @@ resume_new_datasets/
 # datasets_selected/
 
 users.json
+models/
+# ML artifacts (see ml/README.md)
+models/
+ml/results/*_oof.json
+ml/results/*smoke*
+__pycache__/
+test_results.json

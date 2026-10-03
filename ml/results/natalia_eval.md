@@ -1,0 +1,107 @@
+# Human-labeled held-out check (Vanetik & Kogan 2023), n=28 CVs
+
+Caveats: tiny n; annotators agree near chance; IT-only resumes and 5 similar vacancies; fine-tuned model trained on compact views of GPT-parsed fields that cannot be rebuilt from free text.
+
+## PRIMARY: raw view, consensus of both annotators (n = 28 CVs)
+
+| model | pairwise | spearman | top1 | n |
+|---|---|---|---|---|
+| pretrained | 0.291 [0.237, 0.343] | -0.470 [-0.580, -0.346] | 0.111 [0.000, 0.259] | 28 |
+| fine-tuned | 0.274 [0.225, 0.325] | -0.501 [-0.599, -0.383] | 0.074 [0.000, 0.185] | 28 |
+| random (chance) | 0.504 [0.498, 0.511] | 0.012 [-0.001, 0.025] | 0.318 [0.252, 0.396] | 28 |
+| TF-IDF cosine (reference) | 0.514 [0.441, 0.597] | 0.020 [-0.137, 0.194] | 0.444 [0.259, 0.630] | 28 |
+
+Paired fine-tuned minus pretrained:
+
+| metric | diff [95% CI] |
+|---|---|
+| pairwise | -0.018 [-0.070, +0.025]  |
+| spearman | -0.030 [-0.107, +0.038]  |
+| top1 | -0.037 [-0.111, +0.000]  |
+
+## Sensitivity: raw view, all 30 CVs, raw arrays averaged (paper's approach) (n = 30 CVs)
+
+| model | pairwise | spearman | top1 | n |
+|---|---|---|---|---|
+| pretrained | 0.317 [0.253, 0.378] | -0.414 [-0.546, -0.271] | 0.103 [0.000, 0.241] | 30 |
+| fine-tuned | 0.300 [0.241, 0.365] | -0.444 [-0.567, -0.305] | 0.103 [0.000, 0.241] | 30 |
+| random (chance) | 0.497 [0.487, 0.505] | -0.004 [-0.022, 0.015] | 0.297 [0.232, 0.371] | 30 |
+
+Paired fine-tuned minus pretrained:
+
+| metric | diff [95% CI] |
+|---|---|
+| pairwise | -0.016 [-0.065, +0.023]  |
+| spearman | -0.030 [-0.101, +0.033]  |
+| top1 | +0.000 [-0.103, +0.103]  |
+
+## Sensitivity: 'title' view (vacancy = job title only), consensus (n = 28 CVs)
+
+| model | pairwise | spearman | top1 | n |
+|---|---|---|---|---|
+| pretrained | 0.464 [0.384, 0.544] | -0.082 [-0.232, 0.065] | 0.185 [0.037, 0.333] | 28 |
+| fine-tuned | 0.465 [0.394, 0.529] | -0.040 [-0.199, 0.107] | 0.333 [0.185, 0.519] | 28 |
+| random (chance) | 0.504 [0.498, 0.511] | 0.012 [-0.001, 0.025] | 0.318 [0.252, 0.396] | 28 |
+
+Paired fine-tuned minus pretrained:
+
+| metric | diff [95% CI] |
+|---|---|
+| pairwise | +0.001 [-0.061, +0.053]  |
+| spearman | +0.042 [-0.072, +0.146]  |
+| top1 | +0.148 [+0.000, +0.333]  |
+
+## Sensitivity: raw view vs annotator 1 alone (human = the other annotator) (n = 28 CVs)
+
+| model | pairwise | spearman | top1 | n |
+|---|---|---|---|---|
+| pretrained | 0.282 [0.225, 0.339] | -0.529 [-0.643, -0.393] | 0.071 [0.000, 0.179] | 28 |
+| fine-tuned | 0.254 [0.193, 0.314] | -0.586 [-0.711, -0.436] | 0.107 [0.000, 0.250] | 28 |
+| random (chance) | 0.504 [0.498, 0.510] | 0.008 [-0.006, 0.023] | 0.204 [0.189, 0.218] | 28 |
+| human vs human (other annotator) | 0.546 [0.464, 0.629] | 0.143 [-0.054, 0.329] | 0.143 [0.036, 0.286] | 28 |
+
+Paired fine-tuned minus pretrained:
+
+| metric | diff [95% CI] |
+|---|---|
+| pairwise | -0.029 [-0.061, -0.000]* |
+| spearman | -0.057 [-0.125, +0.007]  |
+| top1 | +0.036 [+0.000, +0.107]  |
+
+## Sensitivity: raw view vs annotator 2 alone (human = the other annotator) (n = 28 CVs)
+
+| model | pairwise | spearman | top1 | n |
+|---|---|---|---|---|
+| pretrained | 0.421 [0.361, 0.479] | -0.164 [-0.318, -0.007] | 0.250 [0.107, 0.429] | 28 |
+| fine-tuned | 0.421 [0.364, 0.479] | -0.168 [-0.318, -0.011] | 0.250 [0.107, 0.429] | 28 |
+| random (chance) | 0.506 [0.500, 0.512] | 0.015 [0.001, 0.029] | 0.208 [0.195, 0.221] | 28 |
+| human vs human (other annotator) | 0.546 [0.464, 0.629] | 0.143 [-0.054, 0.329] | 0.143 [0.036, 0.286] | 28 |
+
+Paired fine-tuned minus pretrained:
+
+| metric | diff [95% CI] |
+|---|---|
+| pairwise | +0.000 [-0.025, +0.029]  |
+| spearman | -0.004 [-0.061, +0.054]  |
+| top1 | +0.000 [+0.000, +0.000]  |
+
+## EXPLORATORY diagnostics (post hoc, not part of the pre-specified protocol)
+
+### Vacancy-level view
+
+| vacancy | title | mean rank A1 | mean rank A2 | mean rank consensus | mean cosine pretrained | mean cosine fine-tuned |
+|---|---|---|---|---|---|---|
+| 1 | Software Developer - .Net | 2.04 | 2.79 | 2.41 | 0.380 | 0.583 |
+| 2 | Remote Software Developer | 1.96 | 2.89 | 2.43 | 0.267 | 0.474 |
+| 3 | Junior Level Software Developer (1-4 yea | 2.57 | 2.64 | 2.61 | 0.446 | 0.623 |
+| 4 | Backend Software Developer | 3.89 | 2.86 | 3.38 | 0.492 | 0.661 |
+| 5 | Software Developer | 4.54 | 3.82 | 4.18 | 0.475 | 0.656 |
+
+### Vacancy-centered within-CV ordering
+
+| model | pairwise | spearman | top1 | n |
+|---|---|---|---|---|
+| pretrained | 0.466 [0.379, 0.559] | -0.057 [-0.225, 0.107] | 0.143 [0.036, 0.286] | 28 |
+| fine-tuned | 0.453 [0.377, 0.531] | -0.082 [-0.229, 0.064] | 0.143 [0.036, 0.286] | 28 |
+| TF-IDF cosine (reference) | 0.427 [0.345, 0.513] | -0.196 [-0.361, -0.032] | 0.143 [0.036, 0.286] | 28 |
+| random (chance) | 0.505 [0.498, 0.513] | 0.015 [-0.001, 0.030] | 0.209 [0.194, 0.221] | 28 |
