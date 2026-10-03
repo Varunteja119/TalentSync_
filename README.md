@@ -106,6 +106,7 @@ Open the URL shown in the terminal (`http://localhost:8501` by default).
 - `graph.py` — visualizes validation and sensitivity results
 - `role_profiles/` — role definitions and required-skill profiles
 - `ner_resources/` — skill/role/tool vocabularies for NER and keyword matching
+- `ml/` — Phase 3: model fine-tuning and evaluation code and results (see `ml/README.md`)
 
 ## Roadmap
 
