@@ -200,6 +200,84 @@ TEST_CASES = [
         "expected_role": "software engineer",
         "expected_rank": None,
         "description": "Sparse generic profile should not strongly match technical roles"
+    },
+    # ------------------------------------------------------------------
+    # Cases added after the Phase 3 evaluation. Their expected ranks were fixed from the role
+    # profiles (core-skill coverage) BEFORE they were run; ml/suite_audit.py reproduces that check.
+    # The first three target level words on skills ("Advanced Excel", "Docker basics"); the rest
+    # cover roles the original cases never exercised.
+    # ------------------------------------------------------------------
+    {
+        "name": "Qualifier Phrasing - Excel/SQL levels",
+        "skills": ["Advanced Excel", "SQL fundamentals", "Reporting", "Dashboards"],
+        "roles": [],
+        "tools": ["Excel", "Power BI"],
+        "expected_role": "junior data analyst",
+        "expected_rank": 2,
+        "description": "Level words must not hide a match (exact matching gave 0% overlap here)"
+    },
+    {
+        "name": "Qualifier Phrasing - Docker/Linux levels",
+        "skills": ["Docker basics", "Linux fundamentals", "Shell Scripting", "Monitoring"],
+        "roles": [],
+        "tools": ["Git"],
+        "expected_role": "devops engineer",
+        "expected_rank": 1,
+        "description": "Entry-level phrasing of the core DevOps skills should still surface DevOps"
+    },
+    {
+        "name": "Qualifier Phrasing - Python/Git levels",
+        "skills": ["Beginner Python", "Intermediate Git", "Linux", "Debugging"],
+        "roles": [],
+        "tools": ["VS Code"],
+        "expected_role": "software engineer",
+        "expected_rank": 1,
+        "description": "Beginner/intermediate phrasing of Python and Git should still surface Software Engineer"
+    },
+    {
+        "name": "Perfect Match - Generative AI Engineer",
+        "skills": ["LLM Integration", "Prompt Engineering", "RAG", "Semantic Search", "Vector Search"],
+        "roles": ["Generative AI Engineer"],
+        "tools": ["LangChain", "OpenAI API"],
+        "expected_role": "generative ai engineer",
+        "expected_rank": 1,
+        "description": "Full coverage of the Generative AI core skills (LLM Application Engineer covers 2 of 3)"
+    },
+    {
+        "name": "Perfect Match - Supply Chain Manager",
+        "skills": ["Supply Chain Management", "Logistics", "Planning", "Inventory Management"],
+        "roles": ["Supply Chain Manager"],
+        "tools": ["SAP", "Excel"],
+        "expected_role": "supply chain manager",
+        "expected_rank": 1,
+        "description": "Full coverage of the Supply Chain Manager skills (Logistics Manager covers 1 of 2)"
+    },
+    {
+        "name": "Perfect Match - Security Manager",
+        "skills": ["Security Operations", "Surveillance", "Risk Assessment", "Incident Management"],
+        "roles": ["Security Manager"],
+        "tools": ["CCTV", "Access Control Systems"],
+        "expected_role": "security manager",
+        "expected_rank": 1,
+        "description": "Full coverage of the Security Manager skills (Risk Manager covers 1 of 2)"
+    },
+    {
+        "name": "Perfect Match - NLP Engineer",
+        "skills": ["Natural Language Processing", "Machine Learning", "Semantic Search", "LLM Integration"],
+        "roles": ["NLP Engineer"],
+        "tools": ["Hugging Face", "spaCy"],
+        "expected_role": "nlp engineer",
+        "expected_rank": 1,
+        "description": "Full coverage of the NLP Engineer core skills (no other role covers both)"
+    },
+    {
+        "name": "Perfect Match - Compliance Officer (unambiguous profile)",
+        "skills": ["Compliance", "Documentation", "Report Writing", "Analysis"],
+        "roles": ["Compliance Officer"],
+        "tools": ["Excel"],
+        "expected_role": "compliance officer",
+        "expected_rank": 1,
+        "description": "Matches the Compliance Officer profile exactly; unlike the earlier Compliance case, no other role ties"
     }
 ]
 

@@ -1,0 +1,75 @@
+﻿====================================================================================================
+PART 1: is each case well-posed? (core-skill coverage of the intended role vs every other role)
+====================================================================================================
+ # case                                                exact   now  verdict
+ 1 Perfect Match - Software Engineer                    100%  100%  UNIQUE MAX
+ 2 Perfect Match - Data Scientist                        50%   50%  BELOW MAX (Machine Learning Engineer covers 100%)
+ 3 Perfect Match - Full Stack Developer                  50%   50%  UNIQUE MAX
+ 4 Perfect Match - DevOps Engineer                      100%  100%  UNIQUE MAX
+ 5 Perfect Match - Accounts Executive                   100%  100%  UNIQUE MAX
+ 6 Cross-Domain - Military to Backend                     0%   50%  TIED MAX (4 roles: Backend Developer, Machine Learning Engineer, Software Developer, Software Engineer)
+ 7 Cross-Domain - Military to Data Analysis             100%  100%  TIED MAX (3 roles: Business Systems Analyst, Data Analyst, Junior Data Analyst)
+ 8 Partial Match - Junior Software Dev                   50%   50%  BELOW MAX (Software Engineer covers 100%)
+ 9 Complete Mismatch - Accountant vs Backend              0%    0%  NEGATIVE: unwanted role coverage 0% (below the 15% gate, absent)
+10 Multi-skilled - Full Stack Developer                  50%   50%  TIED MAX (6 roles: Backend Developer, DevOps Engineer, Full Stack Developer, Machine Learning Engineer, Software Developer, Software Engineer)
+11 Perfect Match - Backend Developer                    100%  100%  UNIQUE MAX
+12 Perfect Match - Software Developer                   100%  100%  UNIQUE MAX
+13 Perfect Match - Data Analyst                         100%  100%  TIED MAX (3 roles: Business Systems Analyst, Data Analyst, Junior Data Analyst)
+14 Perfect Match - Machine Learning Engineer            100%  100%  UNIQUE MAX
+15 Perfect Match - Technical Support Engineer            50%   50%  TIED MAX (4 roles: Compliance Officer, DevOps Engineer, Maintenance Manager, Technical Support Engineer)
+16 Perfect Match - Operations Manager                    67%   67%  BELOW MAX (Program Manager covers 100%)
+17 Perfect Match - Compliance Officer                   100%  100%  TIED MAX (3 roles: Compliance Analyst, Compliance Officer, Risk & Audit Analyst)
+18 Perfect Match - Team Lead                            100%  100%  TIED MAX (2 roles: Program Manager, Team Lead)
+19 Cross-Domain - Support to DevOps                      50%  100%  UNIQUE MAX
+20 Cross-Domain - Finance to Data Analyst                50%  100%  TIED MAX (3 roles: Business Systems Analyst, Data Analyst, Junior Data Analyst)
+21 Low Information Profile                                0%    0%  NEGATIVE: unwanted role coverage 0% (below the 15% gate, absent)
+22 Qualifier Phrasing - Excel/SQL levels                  0%  100%  TIED MAX (2 roles: Business Systems Analyst, Junior Data Analyst)   <-- added later
+23 Qualifier Phrasing - Docker/Linux levels               0%  100%  UNIQUE MAX   <-- added later
+24 Qualifier Phrasing - Python/Git levels                 0%  100%  UNIQUE MAX   <-- added later
+25 Perfect Match - Generative AI Engineer               100%  100%  UNIQUE MAX   <-- added later
+26 Perfect Match - Supply Chain Manager                 100%  100%  UNIQUE MAX   <-- added later
+27 Perfect Match - Security Manager                     100%  100%  UNIQUE MAX   <-- added later
+28 Perfect Match - NLP Engineer                         100%  100%  UNIQUE MAX   <-- added later
+29 Perfect Match - Compliance Officer (unambiguous pr   100%  100%  UNIQUE MAX   <-- added later
+
+verdict counts: {'UNIQUE MAX': 15, 'BELOW MAX': 3, 'TIED MAX': 9, 'NEGATIVE': 2}
+TIED / BELOW cases cannot fairly demand rank 1 from this matcher; a PARTIAL on them reflects the case, not a defect.
+
+====================================================================================================
+PART 2: previous role_matcher.py (a1e0976) vs current, same model, corrected scoring
+====================================================================================================
+ # case                                               expected  previous         current         
+ 1 Perfect Match - Software Engineer                      <= 1  PASSED #1        PASSED #1       
+ 2 Perfect Match - Data Scientist                         <= 1  PARTIAL #2       PARTIAL #2      
+ 3 Perfect Match - Full Stack Developer                   <= 1  PASSED #1        PASSED #1       
+ 4 Perfect Match - DevOps Engineer                        <= 1  PASSED #1        PASSED #1       
+ 5 Perfect Match - Accounts Executive                     <= 1  PASSED #1        PASSED #1       
+ 6 Cross-Domain - Military to Backend                     <= 5  SKIPPED          PASSED #4          <-- changed
+ 7 Cross-Domain - Military to Data Analysis               <= 5  PASSED #1        PASSED #1       
+ 8 Partial Match - Junior Software Dev                   <= 10  PASSED #2        PASSED #2       
+ 9 Complete Mismatch - Accountant vs Backend              none  PASSED           PASSED          
+10 Multi-skilled - Full Stack Developer                   <= 2  PASSED #2        PASSED #2       
+11 Perfect Match - Backend Developer                      <= 1  PASSED #1        PASSED #1       
+12 Perfect Match - Software Developer                     <= 1  PASSED #1        PASSED #1       
+13 Perfect Match - Data Analyst                           <= 1  PASSED #1        PASSED #1       
+14 Perfect Match - Machine Learning Engineer              <= 1  PASSED #1        PASSED #1       
+15 Perfect Match - Technical Support Engineer             <= 1  PASSED #1        PASSED #1       
+16 Perfect Match - Operations Manager                     <= 1  PASSED #1        PASSED #1       
+17 Perfect Match - Compliance Officer                     <= 1  PARTIAL #3       PARTIAL #3      
+18 Perfect Match - Team Lead                              <= 1  PASSED #1        PASSED #1       
+19 Cross-Domain - Support to DevOps                       <= 8  PASSED #1        PASSED #1       
+20 Cross-Domain - Finance to Data Analyst                 <= 6  PASSED #1        PASSED #1       
+21 Low Information Profile                                none  PASSED           PASSED          
+22 Qualifier Phrasing - Excel/SQL levels                  <= 2  SKIPPED          PASSED #1          <-- changed
+23 Qualifier Phrasing - Docker/Linux levels               <= 1  SKIPPED          PASSED #1          <-- changed
+24 Qualifier Phrasing - Python/Git levels                 <= 1  FAILED           PASSED #1          <-- changed
+25 Perfect Match - Generative AI Engineer                 <= 1  PASSED #1        PASSED #1       
+26 Perfect Match - Supply Chain Manager                   <= 1  PASSED #1        PASSED #1       
+27 Perfect Match - Security Manager                       <= 1  PASSED #1        PASSED #1       
+28 Perfect Match - NLP Engineer                           <= 1  PASSED #1        PASSED #1       
+29 Perfect Match - Compliance Officer (unambiguous pr     <= 1  PASSED #1        PASSED #1       
+
+original cases (n=21): previous 90.5%   current 95.2%
+
+cases added later (n=8): previous 62.5%   current 100.0%
+all cases (n=29): previous 82.8%   current 96.6%

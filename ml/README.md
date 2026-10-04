@@ -20,7 +20,7 @@ pretrained `all-MiniLM-L6-v2` that the app uses, and swap it into `role_matcher.
 | Training / CV data | `netsol/resume-score-details` (loaded from a HuggingFace copy, `saptarshideveloper/resume-score-details`; group counts match the original card). 1,031 files, of which **851 usable scored pairs** (142 have no scores, 35 flagged invalid, 3 missing text) covering **199 resumes and 26 job descriptions**. Labels are GPT-4o scores. |
 | Relevance label | `mean(macro, micro) / 10`, in [0, 1] |
 | Held-out human check | Vanetik & Kogan (2023) dataset: 30 resumes x 5 vacancies, two human annotators. 28 usable CVs (annotator 1's rows for CV 9 and 28 are not valid permutations). |
-| In-app check | The repo's `validation_test_suite.py` (21 hand-written cases, 39 roles). |
+| In-app check | The repo's `validation_test_suite.py` (21 hand-written cases at the time of this evaluation, 29 since; 39 roles). |
 
 Inputs are short "compact" views built from fields in each record so they fit MiniLM's 256-token window
 (the raw texts exceed it for 96.5% of resumes and 80.8% of JDs):
@@ -111,7 +111,7 @@ and no safety regression. It does not, so **the app keeps `all-MiniLM-L6-v2`** a
 - Compact inputs come from GPT-parsed fields, which TalentSync's own extractor does not produce.
 - 199 resumes in total. Seeds vary the split and training randomness, not the underlying resumes.
 - The human-labeled set is tiny and noisy, IT-only, and assumes CSV row order = vacancy numbering (unverified).
-- The validation suite is small, hand-written and was likely used to tune the current weights, which favours the shipped configuration.
+- The validation suite is small, hand-written and was likely used to tune the current weights, which favours the shipped configuration. Two of its original cases are ambiguous by construction (see `ml/suite_audit.py`): the Data Scientist candidate covers 100% of Machine Learning Engineer core skills but only 50% of Data Scientist ones, and Compliance Analyst and Risk & Audit Analyst tie Compliance Officer at 100%, so those cases stay PARTIAL.
 - One scoring bug in the suite was found and fixed: cases with `expected_rank: None` scored correct absence as FAILED. Numbers
   recorded before the fix are not comparable (the shipped configuration moves from 81.0% to 90.5%).
 
