@@ -83,12 +83,14 @@ score 0.466 and 0.453 pairwise against chance 0.505. **Inconclusive.**
 
 ### 4. In-app: validation suite, 2 x 2 (model x text template)
 
+Measured on the app as of commit `a1e0976`, before the later skill-qualifier normalisation in `role_matcher.py`.
+
 Effectiveness on the 21 cases (pass = 1, partial = 0.5). "Corrected" counts correct absence as a pass for the two negative cases
 (see note below). "LOO-tuned" re-tunes weights and thresholds on a shared grid with leave-one-case-out.
 
 | Configuration | Suite scoring, as shipped | Corrected, as shipped | Corrected, LOO-tuned |
 |---|---|---|---|
-| A pretrained + current templates (ships today) | 81.0% | 90.5% | 90.5% |
+| A pretrained + current templates (app as of `a1e0976`) | 81.0% | 90.5% | 90.5% |
 | B fine-tuned + current templates | 81.0% | 90.5% | 90.5% |
 | C fine-tuned + compact templates | 81.0% | 90.5% | 90.5% |
 | D pretrained + compact templates | 83.3% | 92.9% | 92.9% |

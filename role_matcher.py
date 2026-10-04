@@ -139,6 +139,24 @@ def compute_semantic_similarity(candidate_skills, candidate_roles, candidate_too
 
     return round(float(similarity), 4)
 
+# Level/qualifier words that people attach to a skill ("Python basics", "Advanced Excel") but that
+# are not part of the skill itself. Role profiles list bare skills ("python", "excel"), so an
+# exact-string comparison treats "python basics" as a different skill from "python" and a candidate
+# who wrote it gets zero overlap. Stripping these words makes the comparison about the skill, not
+# the phrasing. Deliberately narrow: only these level words, nothing else, and a phrase that would
+# be left empty (e.g. just "Basics") is kept as written.
+_SKILL_QUALIFIERS = {
+    "basic", "basics", "fundamentals", "beginner",
+    "intermediate", "advanced", "proficiency", "familiarity",
+}
+
+
+def _skill_key(skill):
+    """Lowercased skill with level/qualifier words removed, used for skill-overlap matching."""
+    s = skill.lower().strip()
+    kept = [w for w in s.split() if w not in _SKILL_QUALIFIERS]
+    return " ".join(kept) if kept else s
+
 def compute_skill_overlap(candidate_skills, role_profile):
     """
     Calculate skill overlap ratio:
@@ -147,7 +165,7 @@ def compute_skill_overlap(candidate_skills, role_profile):
     
     Only core skills are considered for overlap calculation.
     """
-    candidate_skills_set = set(s.lower() for s in candidate_skills)
+    candidate_skills_set = {_skill_key(s) for s in candidate_skills}
     core_skills = set(s.lower() for s in role_profile["core_skills"])
     
     core_matched = candidate_skills_set & core_skills
@@ -327,6 +345,9 @@ def match_roles(candidate_skills, candidate_roles=None, candidate_tools=None, ca
         candidate_tools = []
 
     recommendations = []
+    # Same normalisation as compute_skill_overlap, so the matched-skill lists shown to the user
+    # agree with the overlap ratio they sit next to.
+    candidate_keys = {_skill_key(s) for s in candidate_skills}
 
     candidate_text = _build_candidate_text(candidate_skills, candidate_roles, candidate_tools)
     candidate_embedding = _get_model().encode(candidate_text)
@@ -367,12 +388,12 @@ def match_roles(candidate_skills, candidate_roles=None, candidate_tools=None, ca
             "role_bonus": role_bonus,
             "fit_label": fit_label,
             "job_links": job_links,
-            "core_matched": len(set(s.lower() for s in candidate_skills) & set(s.lower() for s in role_profile["core_skills"])),
+            "core_matched": len(candidate_keys & set(s.lower() for s in role_profile["core_skills"])),
             "core_total": len(role_profile["core_skills"]),
-            "optional_matched": len(set(s.lower() for s in candidate_skills) & set(s.lower() for s in role_profile.get("optional_skills", []))),
+            "optional_matched": len(candidate_keys & set(s.lower() for s in role_profile.get("optional_skills", []))),
             "optional_total": len(role_profile.get("optional_skills", [])),
-            "matched_core_skills": sorted(set(s.lower() for s in candidate_skills) & set(s.lower() for s in role_profile["core_skills"])),
-            "matched_optional_skills": sorted(set(s.lower() for s in candidate_skills) & set(s.lower() for s in role_profile.get("optional_skills", [])))
+            "matched_core_skills": sorted(candidate_keys & set(s.lower() for s in role_profile["core_skills"])),
+            "matched_optional_skills": sorted(candidate_keys & set(s.lower() for s in role_profile.get("optional_skills", [])))
         })
 
    
