@@ -4,7 +4,7 @@ on:
   pull_request:
     branches: [master]
   push:
-    branches: [fix/project-extraction-v2]
+    branches: [fix/project-extraction-v2, fix/ai-role-skill-normalization]
 
 jobs:
   test-project-extraction:
