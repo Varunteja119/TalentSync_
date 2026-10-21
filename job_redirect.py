@@ -332,6 +332,12 @@ def generate_job_links(role, location="UAE", experience=None):
     role_encoded = urllib.parse.quote(role_clean)
     search_query = urllib.parse.quote(f"{role_clean} {location_clean}".strip())
 
+    # Naukri search URLs use comma-separated keywords. Convert the OR-separated
+    # role query into individual terms before building the Naukri URL.
+    naukri_roles = [part.strip() for part in re.split(r"\s+OR\s+|\s*,\s*", role_clean, flags=re.IGNORECASE) if part.strip()]
+    naukri_keywords = ",".join(naukri_roles)
+    naukri_query = urllib.parse.quote(naukri_keywords, safe=",")
+
     def _slugify(value):
         slug = re.sub(r"[^a-z0-9]+", "-", value.lower())
         return slug.strip("-")
@@ -347,7 +353,7 @@ def generate_job_links(role, location="UAE", experience=None):
 
     links = {
         "linkedin": linkedin_url,
-        "naukri": f"https://www.naukri.com/{role_slug}-jobs-in-{location_slug}",
+        "naukri": f"https://www.naukri.com/jobs-in-{location_slug}?k={naukri_query}",
         "glassdoor": f"https://www.glassdoor.com/Job/jobs.htm?sc.keyword={role_encoded}",
         "wellfound": f"https://wellfound.com/jobs?query={role_encoded}",
         "internshala": f"https://internshala.com/jobs/{role_slug}-jobs",
