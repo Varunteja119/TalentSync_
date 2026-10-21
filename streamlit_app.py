@@ -1017,13 +1017,20 @@ if not st.session_state.logged_in:
 
             if uploaded_file:
                 import tempfile
+                import hashlib
+
+                resume_bytes = uploaded_file.getvalue()
+                resume_fingerprint = hashlib.sha256(resume_bytes).hexdigest()
+                is_new_resume = (
+                    st.session_state.get("_signup_processed_resume_hash") != resume_fingerprint
+                )
 
                 ext = os.path.splitext(uploaded_file.name)[1].lower()
                 with tempfile.NamedTemporaryFile(delete=False, suffix=ext) as tmp:
                     # Streamlit reruns the script whenever a form field changes.
                     # UploadedFile.read() advances the cursor, so later reruns can
                     # extract from an empty file. getvalue() is stable across reruns.
-                    tmp.write(uploaded_file.getvalue())
+                    tmp.write(resume_bytes)
                     path = tmp.name
 
                 text = extract_text(path)
@@ -1055,6 +1062,27 @@ if not st.session_state.logged_in:
                         }
                     except Exception:
                         pass
+
+                # Widget defaults are only applied on first creation. When a user
+                # uploads a resume after the signup form has rendered, Streamlit keeps
+                # the old empty widget state unless we seed the keys explicitly.
+                if is_new_resume:
+                    st.session_state["_signup_processed_resume_hash"] = resume_fingerprint
+                    st.session_state["signup_skills"] = ", ".join(extracted.get("skills", []))
+                    st.session_state["signup_roles"] = ", ".join(extracted.get("roles", []))
+                    st.session_state["signup_tools"] = ", ".join(extracted.get("tools", []))
+                    st.session_state["signup_project_count"] = min(len(extracted_projects), 10)
+                    for project_index in range(min(len(extracted_projects), 10)):
+                        project = extracted_projects[project_index]
+                        st.session_state[f"signup_project_name_{project_index}"] = project.get("name", "")
+                        description = project.get("description", "")
+                        if isinstance(description, list):
+                            description = "\n".join(map(str, description))
+                        st.session_state[f"signup_project_description_{project_index}"] = description
+                        technologies = project.get("technologies", [])
+                        st.session_state[f"signup_project_technologies_{project_index}"] = (
+                            technologies if isinstance(technologies, str) else ", ".join(technologies or [])
+                        )
 
                 st.success("Resume processed successfully ✅")
                 st.info(
