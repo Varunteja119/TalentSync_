@@ -1127,6 +1127,7 @@ if not st.session_state.logged_in:
             value=max(1, len(prefilled_education)),
             step=1,
             key="signup_education_count",
+        )
         for i in range(num_edu):
             pre_edu = prefilled_education[i] if i < len(prefilled_education) else {}
             degree = st.text_input(
@@ -1181,6 +1182,7 @@ if not st.session_state.logged_in:
             value=len(prefilled_experience),
             step=1,
             key="signup_experience_count",
+        )
         for i in range(num_exp):
             pre_exp = prefilled_experience[i] if i < len(prefilled_experience) else {}
             role = st.text_input(f"Role {i+1}", value=pre_exp.get("role", ""), key=f"role_manual_{i}")
