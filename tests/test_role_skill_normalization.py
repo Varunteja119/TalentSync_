@@ -5,6 +5,7 @@ from pathlib import Path
 
 
 class SkillNormalizationTests(unittest.TestCase):
+    """Regression tests for resume-skill alias normalization."""
     @classmethod
     def setUpClass(cls):
         source = Path(__file__).resolve().parents[1] / "role_matcher.py"
