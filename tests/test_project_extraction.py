@@ -29,6 +29,26 @@ class ExtractProjectsTests(unittest.TestCase):
         self.assertIn("Power BI dashboards", projects[1]["description"])
         self.assertNotIn("TECHNICAL SKILLS", str(projects))
 
+    def test_bullet_without_space_is_not_misread_as_project_title(self):
+        resume = """Projects
+        TalentSync – AI Career Intelligence & Role Matching Platform
+        •Developed a Streamlit platform for resume matching.
+        •Implemented military-to-civilian skill normalization using SentenceTransformer embeddings, semantic similarity, and skill-overlap scoring.
+        RetailPulse – E-Commerce Sales Analytics
+        •Built a sales analytics pipeline with PostgreSQL.
+        """
+        projects = extract_projects(resume)
+        self.assertEqual(len(projects), 2)
+        self.assertEqual(
+            projects[0]["name"],
+            "TalentSync – AI Career Intelligence & Role Matching Platform",
+        )
+        self.assertIn("Implemented military-to-civilian", projects[0]["description"])
+        self.assertEqual(
+            projects[1]["name"],
+            "RetailPulse – E-Commerce Sales Analytics",
+        )
+
     def test_missing_projects_section_returns_empty_list(self):
         self.assertEqual(extract_projects("SUMMARY\nA graduate\nSKILLS\nPython, SQL"), [])
 
