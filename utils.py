@@ -480,29 +480,54 @@ def _extract_structured_education(edu_lines):
 
 
 def extract_projects(text):
-    """Extract project titles and bullet descriptions from a clearly headed resume section."""
+    """Extract projects from an explicitly titled Projects section."""
     lines = _clean_lines(text or "")
-    section = _find_section(
-        lines, ["PROJECT", "PROJECTS", "PERSONAL PROJECTS", "ACADEMIC PROJECTS"],
-        ALL_SECTION_KEYS + ["TECHNICAL SKILLS", "TECHNICAL SKILL", "ADDITIONAL INFORMATION",
-                            "CERTIFICATIONS", "ACHIEVEMENTS", "LANGUAGES"]
-    )
+    section_titles = {"PROJECT", "PROJECTS", "PERSONAL PROJECTS", "ACADEMIC PROJECTS"}
+    start = None
+    for index, line in enumerate(lines):
+        heading = line.strip().rstrip(":").strip().upper()
+        if heading in section_titles:
+            start = index + 1
+            break
+    if start is None:
+        return []
+
+    # Don't use the generic section finder to locate the start: it intentionally
+    # accepts keyword-containing headings, which would mistake "My Project" for
+    # the actual section heading.
+    end = len(lines)
+    boundary_keys = [key for key in ALL_SECTION_KEYS if key not in {"PROJECT", "PROJECTS"}]
+    boundary_keys += ["TECHNICAL SKILLS", "TECHNICAL SKILL", "ADDITIONAL INFORMATION",
+                      "CERTIFICATIONS", "ACHIEVEMENTS", "LANGUAGES"]
+    for index in range(start, len(lines)):
+        line = lines[index]
+        if len(line.split()) <= 4 and any(
+            re.search(rf"\\b{re.escape(key)}S?\\b", line.upper())
+            for key in boundary_keys
+        ):
+            end = index
+            break
+
     projects, current = [], None
+
     def finish():
         nonlocal current
         if current and current["name"]:
-            current["description"] = "\n".join(current["description"]).strip()
+            current["description"] = "\\n".join(current["description"]).strip()
             current["technologies"] = list(dict.fromkeys(current["technologies"]))
             projects.append(current)
         current = None
-    for line in section:
-        bullet = bool(re.match(r"^\s*[•*▪◦-]\s+", line))
-        clean = re.sub(r"^\s*[•*▪◦-]\s+", "", line).strip()
+
+    for line in lines[start:end]:
+        bullet = bool(re.match(r"^\\s*[•*▪◦-]\\s+", line))
+        clean = re.sub(r"^\\s*[•*▪◦-]\\s+", "", line).strip()
         if not clean:
             continue
-        tech = re.match(r"^(?:Technologies|Tech(?:nology)? Stack|Tools)\s*:\s*(.+)$", clean, re.I)
+        tech = re.match(r"^(?:Technologies|Tech(?:nology)? Stack|Tools)\\s*:\\s*(.+)$", clean, re.I)
         if tech and current:
-            current["technologies"].extend(x.strip() for x in re.split(r"[,;|]", tech.group(1)) if x.strip())
+            current["technologies"].extend(
+                item.strip() for item in re.split(r"[,;|]", tech.group(1)) if item.strip()
+            )
         elif not bullet and len(clean.split()) <= 14 and not re.search(r"[.!?]$", clean):
             finish()
             current = {"name": clean, "description": [], "technologies": []}
