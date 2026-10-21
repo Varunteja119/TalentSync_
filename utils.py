@@ -515,8 +515,10 @@ def extract_projects(text):
         current = None
 
     for line in lines[start:end]:
-        bullet = bool(re.match(r"^\s*[•*▪◦-]\s+", line))
-        clean = re.sub(r"^\s*[•*▪◦-]\s+", "", line).strip()
+        # PDFs frequently omit the space after a bullet (e.g. "•Implemented").
+        # Treat those as bullets too, otherwise the sentence can be misread as a title.
+        bullet = bool(re.match(r"^\s*[•*▪◦-]\s*", line))
+        clean = re.sub(r"^\s*[•*▪◦-]\s*", "", line).strip()
         if not clean:
             continue
         tech = re.match(r"^(?:Technologies|Tech(?:nology)? Stack|Tools)\s*:\s*(.+)$", clean, re.I)
