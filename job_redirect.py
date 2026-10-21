@@ -334,7 +334,7 @@ def generate_job_links(role, location="UAE", experience=None):
 
     # Naukri search URLs use comma-separated keywords. Convert the OR-separated
     # role query into individual terms before building the Naukri URL.
-    naukri_roles = [part.strip() for part in re.split(r"\\s+OR\\s+|\\s*,\\s*", role_clean, flags=re.IGNORECASE) if part.strip()]
+    naukri_roles = [part.strip() for part in re.split(r"\s+OR\s+|\s*,\s*", role_clean, flags=re.IGNORECASE) if part.strip()]
     naukri_keywords = ",".join(naukri_roles)
     naukri_query = urllib.parse.quote(naukri_keywords, safe=",")
 
