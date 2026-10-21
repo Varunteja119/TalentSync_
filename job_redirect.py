@@ -309,7 +309,7 @@ _LINKEDIN_EXPERIENCE_CODES = {
 }
 
 
-def generate_job_links(role, location="India", experience=None):
+def generate_job_links(role, location="UAE", experience=None):
     """
     Static job-search links for major platforms -- free and instant.
 
