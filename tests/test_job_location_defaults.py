@@ -17,6 +17,16 @@ class JobLocationDefaultTests(unittest.TestCase):
         query = parse_qs(urlparse(links["linkedin"]).query)
         self.assertEqual(query.get("location"), ["UAE"])
 
+    def test_none_location_falls_back_to_uae(self):
+        links = generate_job_links("AI Engineer", location=None)
+        query = parse_qs(urlparse(links["linkedin"]).query)
+        self.assertEqual(query.get("location"), ["UAE"])
+
+    def test_whitespace_location_falls_back_to_uae(self):
+        links = generate_job_links("AI Engineer", location="   ")
+        query = parse_qs(urlparse(links["linkedin"]).query)
+        self.assertEqual(query.get("location"), ["UAE"])
+
     def test_linkedin_experience_levels_change_filter(self):
         fresher = parse_qs(urlparse(generate_job_links("AI Engineer", experience="no_experience")["linkedin"]).query)
         entry = parse_qs(urlparse(generate_job_links("AI Engineer", experience="under_3_years_experience")["linkedin"]).query)
