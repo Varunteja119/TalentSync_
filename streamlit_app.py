@@ -622,6 +622,32 @@ def render_profile_view(profile):
             st.write("**Tools:** Not available")
 
     with st.container(border=True):
+        st.markdown("### Projects")
+        projects = profile.get("projects", []) or []
+        if projects:
+            for project in projects:
+                if not isinstance(project, dict):
+                    st.write(f"- {project}")
+                    continue
+                project_name = project.get("name", project.get("title", "Project"))
+                st.markdown(f"**{project_name}**")
+                description = project.get("description", "")
+                if isinstance(description, list):
+                    for item in description:
+                        if str(item).strip():
+                            st.write(f"- {str(item).strip()}")
+                elif str(description).strip():
+                    for item in str(description).splitlines():
+                        if item.strip():
+                            st.write(f"- {item.strip().lstrip('-•* ')}")
+                technologies = project.get("technologies", project.get("tools", []))
+                if technologies:
+                    tech_text = technologies if isinstance(technologies, str) else ", ".join(map(str, technologies))
+                    st.caption(f"Technologies: {tech_text}")
+        else:
+            st.write("No projects added yet. Use Edit Profile or Resume Builder to add projects.")
+
+    with st.container(border=True):
         st.markdown("### Experience")
         if profile.get("experience"):
             for exp in profile.get("experience", []):
