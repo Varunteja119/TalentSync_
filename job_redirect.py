@@ -332,28 +332,40 @@ def generate_job_links(role, location="UAE", experience=None):
     role_encoded = urllib.parse.quote(role_clean)
     search_query = urllib.parse.quote(f"{role_clean} {location_clean}".strip())
 
-    # Naukri search URLs use comma-separated keywords. Convert the OR-separated
-    # role query into individual terms before building the Naukri URL.
-    naukri_roles = [part.strip() for part in re.split(r"\s+OR\s+|\s*,\s*", role_clean, flags=re.IGNORECASE) if part.strip()]
+    # Naukri supports comma-separated keywords in k and a separate location
+    # field in l. Keep both explicit so the country is not part of the keyword.
+    naukri_roles = [
+        part.strip()
+        for part in re.split(r"\s+OR\s+|\s*,\s*", role_clean, flags=re.IGNORECASE)
+        if part.strip()
+    ]
     naukri_keywords = ",".join(naukri_roles)
     naukri_query = urllib.parse.quote(naukri_keywords, safe=",")
+    naukri_location = urllib.parse.quote(location_clean, safe="")
 
     def _slugify(value):
         slug = re.sub(r"[^a-z0-9]+", "-", value.lower())
         return slug.strip("-")
 
-    role_slug = _slugify(role_clean)
+    role_slug = _slugify(naukri_roles[0] if naukri_roles else role_clean)
     location_slug = _slugify(location_clean)
 
-    linkedin_url = f"https://www.linkedin.com/jobs/search/?keywords={search_query}"
-    if location_clean:
-        linkedin_url += f"&location={urllib.parse.quote(location_clean)}"
+    # urlencode ensures LinkedIn receives recognized query parameters.
+    # Experience codes: 2=Entry level, 3=Associate, 4=Mid-Senior,
+    # 5=Director, 6=Executive.
+    linkedin_params = {
+        "keywords": f"{role_clean} {location_clean}".strip(),
+        "location": location_clean,
+    }
     if experience in _LINKEDIN_EXPERIENCE_CODES:
-        linkedin_url += f"&f_E={_LINKEDIN_EXPERIENCE_CODES[experience]}"
+        linkedin_params["f_E"] = _LINKEDIN_EXPERIENCE_CODES[experience]
+    linkedin_url = "https://www.linkedin.com/jobs/search/?" + urllib.parse.urlencode(
+        linkedin_params, quote_via=urllib.parse.quote
+    )
 
     links = {
         "linkedin": linkedin_url,
-        "naukri": f"https://www.naukri.com/jobs-in-{location_slug}?k={naukri_query}",
+        "naukri": f"https://www.naukri.com/{role_slug}-jobs-in-{location_slug}?k={naukri_query}&l={naukri_location}",
         "glassdoor": f"https://www.glassdoor.com/Job/jobs.htm?sc.keyword={role_encoded}",
         "wellfound": f"https://wellfound.com/jobs?query={role_encoded}",
         "internshala": f"https://internshala.com/jobs/{role_slug}-jobs",
