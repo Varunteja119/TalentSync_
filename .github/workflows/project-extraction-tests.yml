@@ -4,7 +4,7 @@ on:
   pull_request:
     branches: [master]
   push:
-    branches: [fix/project-extraction-v2, fix/ai-role-skill-normalization]
+    branches: [fix/project-extraction-v2, fix/ai-role-skill-normalization, fix/signup-resume-prefill-state]
 
 jobs:
   test-project-extraction:
