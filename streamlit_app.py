@@ -1020,7 +1020,10 @@ if not st.session_state.logged_in:
 
                 ext = os.path.splitext(uploaded_file.name)[1].lower()
                 with tempfile.NamedTemporaryFile(delete=False, suffix=ext) as tmp:
-                    tmp.write(uploaded_file.read())
+                    # Streamlit reruns the script whenever a form field changes.
+                    # UploadedFile.read() advances the cursor, so later reruns can
+                    # extract from an empty file. getvalue() is stable across reruns.
+                    tmp.write(uploaded_file.getvalue())
                     path = tmp.name
 
                 text = extract_text(path)
@@ -1055,10 +1058,19 @@ if not st.session_state.logged_in:
 
                 st.success("Resume processed successfully ✅")
                 st.info(
-                    f"Detected {len(extracted_edu_exp.get('education', []))} education and "
+                    f"Detected {len(extracted.get('skills', []))} skills, "
+                    f"{len(extracted.get('roles', []))} target roles, "
+                    f"{len(extracted.get('tools', []))} tools, "
+                    f"{len(extracted_projects)} projects, "
+                    f"{len(extracted_edu_exp.get('education', []))} education and "
                     f"{len(extracted_edu_exp.get('experience', []))} experience entries. "
-                    "You can edit them before signup."
+                    "Review the prefilled fields below before signup."
                 )
+                if not any(extracted.get(category) for category in ("skills", "roles", "tools")):
+                    st.warning(
+                        "No skills, roles, or tools were detected. Check that the resume text "
+                        "is readable/selectable; scanned PDFs may need OCR."
+                    )
 
         st.markdown("### 👤 Basic Info")
         name = st.text_input("Full Name", basic.get("name", ""))
