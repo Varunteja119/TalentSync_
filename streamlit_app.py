@@ -1115,7 +1115,6 @@ if not st.session_state.logged_in:
             key="signup_summary",
         )
         raw_skills = st.text_area("Skills / Competencies", ", ".join(extracted["skills"]), key="signup_skills")
-        raw_roles = st.text_input("Target Roles", ", ".join(extracted["roles"]), key="signup_roles")
         raw_tools = st.text_input("Tools / Platforms", ", ".join(extracted["tools"]), key="signup_tools")
 
         st.markdown("### 🎓 Education")
@@ -1214,11 +1213,24 @@ if not st.session_state.logged_in:
             return list(dict.fromkeys(part.strip() for part in re.split(r"[,;\n|]", value or "") if part.strip()))
 
         manual_skills = parse_terms(raw_skills)
-        manual_roles = parse_terms(raw_roles)
         manual_tools = parse_terms(raw_tools)
+
+        # Let the role matcher decide which roles fit the candidate's skills.
+        signup_recommendations = safe_match_roles(
+            manual_skills, [], manual_tools, location=location
+        )
+        st.markdown("### AI-recommended roles")
+        if signup_recommendations:
+            st.caption("Based on your skills and tools. These are recommendations, not roles you must choose.")
+            for recommendation in signup_recommendations[:5]:
+                score = recommendation.get("final_score", 0)
+                st.write(f"**{recommendation.get('role', 'Role')}** - {score:.0%} match")
+        else:
+            st.info("Add or review your skills and tools above to see role recommendations.")
+
         entities = {
             "skills": manual_skills,
-            "roles": manual_roles,
+            "roles": [],
             "tools": manual_tools,
         }
 

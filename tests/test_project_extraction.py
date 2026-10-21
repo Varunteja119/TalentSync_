@@ -49,6 +49,25 @@ class ExtractProjectsTests(unittest.TestCase):
             "RetailPulse – E-Commerce Sales Analytics",
         )
 
+    def test_private_use_pdf_bullets_are_not_misread_as_project_titles(self):
+        resume = """PROJECTS
+        TalentSync - AI Career Intelligence & Role Matching Platform
+        \uf0b7Developed a platform that extracts skills and roles using NLP and document processing
+        \uf0b7Implemented hybrid job-role matching using SentenceTransformer
+        embeddings, semantic similarity, and skill-overlap scoring.
+        \uf0b7Built recommendation and resume-generation workflows to convert
+        unstructured resumes into actionable career insights.
+        RetailPulse - E-Commerce Sales Analytics
+        \uf0b7Built a sales analytics pipeline with Python and PostgreSQL.
+        """
+        projects = extract_projects(resume)
+        self.assertEqual(len(projects), 2)
+        self.assertEqual(projects[0]["name"], "TalentSync - AI Career Intelligence & Role Matching Platform")
+        self.assertIn("Implemented hybrid job-role matching", projects[0]["description"])
+        self.assertIn("embeddings, semantic similarity", projects[0]["description"])
+        self.assertIn("unstructured resumes into actionable career insights", projects[0]["description"])
+        self.assertEqual(projects[1]["name"], "RetailPulse - E-Commerce Sales Analytics")
+
     def test_missing_projects_section_returns_empty_list(self):
         self.assertEqual(extract_projects("SUMMARY\nA graduate\nSKILLS\nPython, SQL"), [])
 
