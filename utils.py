@@ -517,8 +517,12 @@ def extract_projects(text):
     for line in lines[start:end]:
         # PDFs frequently omit the space after a bullet (e.g. "•Implemented").
         # Treat those as bullets too, otherwise the sentence can be misread as a title.
-        bullet = bool(re.match(r"^\s*[•*▪◦-]\s*", line))
-        clean = re.sub(r"^\s*[•*▪◦-]\s*", "", line).strip()
+        # PDF extractors often encode bullets with private-use glyphs
+        # (such as U+F0B7) or alternate Unicode bullets. Strip them so a
+        # wrapped achievement is not mistaken for a project heading.
+        bullet_pattern = r"^\s*[•●○▪▫◦‣⁃∙·◾➢➤✓✔*\-\uf0b7\uf0a7\uf0d8]\s*"
+        bullet = bool(re.match(bullet_pattern, line))
+        clean = re.sub(bullet_pattern, "", line).strip()
         if not clean:
             continue
         tech = re.match(r"^(?:Technologies|Tech(?:nology)? Stack|Tools)\s*:\s*(.+)$", clean, re.I)
