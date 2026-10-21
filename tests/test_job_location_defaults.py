@@ -1,5 +1,5 @@
 import unittest
-from urllib.parse import parse_qs, urlparse
+from urllib.parse import parse_qs, unquote, urlparse
 
 from job_redirect import generate_job_links
 
@@ -37,6 +37,16 @@ class JobLocationDefaultTests(unittest.TestCase):
         self.assertNotEqual(fresher["f_E"], experienced["f_E"])
         # LinkedIn should receive its actual entry-level checkbox value for a fresher.
         self.assertIn("f_E=2", generate_job_links("AI Engineer", experience="no_experience")["linkedin"])
+
+    def test_naukri_keywords_are_comma_separated(self):
+        role = "Generative AI Engineer OR NLP Engineer OR LLM Application Engineer"
+        links = generate_job_links(role, location="UAE")
+        parsed = urlparse(links["naukri"])
+        query = parse_qs(parsed.query)
+        keywords = unquote(query.get("k", [""])[0])
+        self.assertEqual(keywords, "Generative AI Engineer,NLP Engineer,LLM Application Engineer")
+        self.assertNotIn(" OR ", keywords)
+        self.assertIn("jobs-in-uae", parsed.path)
 
     def test_explicit_location_overrides_uae_default(self):
         links = generate_job_links("AI Engineer", location="Dubai, United Arab Emirates")
