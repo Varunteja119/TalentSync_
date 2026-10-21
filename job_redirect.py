@@ -324,7 +324,9 @@ def generate_job_links(role, location="UAE", experience=None):
     demand via fetch_live_job_listings().
     """
     role_clean = role.strip()
-    location_clean = location.strip()
+    # UAE is the default even when callers pass None or an empty string.
+    # A non-empty explicit location still overrides the default.
+    location_clean = (location or "UAE").strip() or "UAE"
 
     role_encoded = urllib.parse.quote(role_clean)
     search_query = urllib.parse.quote(f"{role_clean} {location_clean}".strip())
