@@ -491,16 +491,16 @@ def extract_projects(text):
     def finish():
         nonlocal current
         if current and current["name"]:
-            current["description"] = "\\n".join(current["description"]).strip()
+            current["description"] = "\n".join(current["description"]).strip()
             current["technologies"] = list(dict.fromkeys(current["technologies"]))
             projects.append(current)
         current = None
     for line in section:
-        bullet = bool(re.match(r"^\\s*[•*▪◦-]\\s+", line))
-        clean = re.sub(r"^\\s*[•*▪◦-]\\s+", "", line).strip()
+        bullet = bool(re.match(r"^\s*[•*▪◦-]\s+", line))
+        clean = re.sub(r"^\s*[•*▪◦-]\s+", "", line).strip()
         if not clean:
             continue
-        tech = re.match(r"^(?:Technologies|Tech(?:nology)? Stack|Tools)\\s*:\\s*(.+)$", clean, re.I)
+        tech = re.match(r"^(?:Technologies|Tech(?:nology)? Stack|Tools)\s*:\s*(.+)$", clean, re.I)
         if tech and current:
             current["technologies"].extend(x.strip() for x in re.split(r"[,;|]", tech.group(1)) if x.strip())
         elif not bullet and len(clean.split()) <= 14 and not re.search(r"[.!?]$", clean):
