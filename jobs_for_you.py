@@ -27,10 +27,13 @@ def render_jobs_for_you(profile, safe_match_roles, render_live_listings, job_red
         help=f"Estimated from dated resume experience: about {years:.1f} years. Adjust if needed.",
     )
     experience_filter = job_redirect.EXPERIENCE_LEVELS[level] if job_redirect else None
+    # Default job discovery to the UAE rather than inheriting a stale or
+    # resume-derived country (which can send UAE users to India). Use a new
+    # widget key so Streamlit does not retain the old location value.
     location = st.text_input(
-        "Job location", value=str(profile.get("location") or "UAE").strip() or "UAE",
-        key="jobs_for_you_location",
-    ).strip()
+        "Job location", value="UAE",
+        key="jobs_for_you_location_v2",
+    ).strip() or "UAE"
 
     if not any(profile.get(k) for k in ("skills", "roles", "tools")):
         st.info("Add skills, tools, or target roles to your profile to get tailored job searches.")
