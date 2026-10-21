@@ -340,6 +340,14 @@ def render_dashboard(profile):
 
     with left_col:
         st.markdown("### Recommended Roles")
+        if not recommendation_data:
+            st.info(
+                "No role matches meet the current skill-fit threshold yet. "
+                "AI Engineer, Generative AI Engineer, LLM Application Engineer, "
+                "AI Automation Engineer, and NLP Engineer are supported roles. "
+                "Use Profile → Edit Profile → Import from Resume to populate your skills and projects, "
+                "then matching can score these roles against your actual experience."
+            )
         for rec in recommendation_data[:3]:
             with st.container(border=True):
                 row_1, row_2 = st.columns([3, 1])
