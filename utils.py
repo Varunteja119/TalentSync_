@@ -478,6 +478,40 @@ def _extract_structured_education(edu_lines):
     return entries[:5]
 
 
+
+def extract_projects(text):
+    """Extract project titles and bullet descriptions from a clearly headed resume section."""
+    lines = _clean_lines(text or "")
+    section = _find_section(
+        lines, ["PROJECT", "PROJECTS", "PERSONAL PROJECTS", "ACADEMIC PROJECTS"],
+        ALL_SECTION_KEYS + ["TECHNICAL SKILLS", "TECHNICAL SKILL", "ADDITIONAL INFORMATION",
+                            "CERTIFICATIONS", "ACHIEVEMENTS", "LANGUAGES"]
+    )
+    projects, current = [], None
+    def finish():
+        nonlocal current
+        if current and current["name"]:
+            current["description"] = "\\n".join(current["description"]).strip()
+            current["technologies"] = list(dict.fromkeys(current["technologies"]))
+            projects.append(current)
+        current = None
+    for line in section:
+        bullet = bool(re.match(r"^\\s*[•*▪◦-]\\s+", line))
+        clean = re.sub(r"^\\s*[•*▪◦-]\\s+", "", line).strip()
+        if not clean:
+            continue
+        tech = re.match(r"^(?:Technologies|Tech(?:nology)? Stack|Tools)\\s*:\\s*(.+)$", clean, re.I)
+        if tech and current:
+            current["technologies"].extend(x.strip() for x in re.split(r"[,;|]", tech.group(1)) if x.strip())
+        elif not bullet and len(clean.split()) <= 14 and not re.search(r"[.!?]$", clean):
+            finish()
+            current = {"name": clean, "description": [], "technologies": []}
+        elif current:
+            current["description"].append(clean)
+    finish()
+    return projects[:10]
+
+
 def extract_education_experience(text):
     lines = _clean_lines(text)
     all_keys = ALL_SECTION_KEYS
