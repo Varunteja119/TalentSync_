@@ -151,11 +151,35 @@ _SKILL_QUALIFIERS = {
 }
 
 
+_SKILL_ALIASES = {
+    # Canonicalize common resume variants so equivalent skills receive the
+    # same overlap credit instead of being treated as different strings.
+    "rag": "rag",
+    "retrieval augmented generation": "rag",
+    "retrieval-augmented generation": "rag",
+    "retrieval augmented generation rag": "rag",
+    "nlp": "natural language processing",
+    "natural language processing": "natural language processing",
+    "llm integration": "llm integration",
+    "large language model integration": "llm integration",
+    "large language models integration": "llm integration",
+    "large language model": "llm integration",
+    "large language models": "llm integration",
+    "llms": "llm integration",
+    "llm": "llm integration",
+    "prompt design": "prompt engineering",
+    "prompt engineering": "prompt engineering",
+    "vector search": "vector search",
+    "semantic search": "semantic search",
+}
+
 def _skill_key(skill):
-    """Lowercased skill with level/qualifier words removed, used for skill-overlap matching."""
-    s = skill.lower().strip()
+    """Normalize skill aliases and remove level qualifiers for role overlap."""
+    s = re.sub(r"[-_/]+", " ", str(skill).lower()).strip()
+    s = re.sub(r"\\s+", " ", s)
     kept = [w for w in s.split() if w not in _SKILL_QUALIFIERS]
-    return " ".join(kept) if kept else s
+    normalized = " ".join(kept) if kept else s
+    return _SKILL_ALIASES.get(normalized, _SKILL_ALIASES.get(s, normalized))
 
 def compute_skill_overlap(candidate_skills, role_profile):
     """
@@ -166,7 +190,7 @@ def compute_skill_overlap(candidate_skills, role_profile):
     Only core skills are considered for overlap calculation.
     """
     candidate_skills_set = {_skill_key(s) for s in candidate_skills}
-    core_skills = set(s.lower() for s in role_profile["core_skills"])
+    core_skills = {_skill_key(s) for s in role_profile["core_skills"]}
     
     core_matched = candidate_skills_set & core_skills
     total_required = len(core_skills)
@@ -388,9 +412,9 @@ def match_roles(candidate_skills, candidate_roles=None, candidate_tools=None, ca
             "role_bonus": role_bonus,
             "fit_label": fit_label,
             "job_links": job_links,
-            "core_matched": len(candidate_keys & set(s.lower() for s in role_profile["core_skills"])),
+            "core_matched": len(candidate_keys & {_skill_key(s) for s in role_profile["core_skills"]}),
             "core_total": len(role_profile["core_skills"]),
-            "optional_matched": len(candidate_keys & set(s.lower() for s in role_profile.get("optional_skills", []))),
+            "optional_matched": len(candidate_keys & {_skill_key(s) for s in role_profile.get("optional_skills", [])}),
             "optional_total": len(role_profile.get("optional_skills", [])),
             "matched_core_skills": sorted(candidate_keys & set(s.lower() for s in role_profile["core_skills"])),
             "matched_optional_skills": sorted(candidate_keys & set(s.lower() for s in role_profile.get("optional_skills", [])))
