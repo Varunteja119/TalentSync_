@@ -403,6 +403,61 @@ def render_profile_view(profile):
     if st.session_state.profile_edit_mode:
         st.markdown("### Edit Profile")
 
+        # Existing users can re-import their resume without overwriting manually
+        # curated profile fields. Only extracted projects/entities are merged.
+        st.markdown("#### Import from Resume")
+        resume_upload = st.file_uploader(
+            "Upload a resume to extract projects and refresh skills/roles/tools",
+            type=["pdf", "docx", "txt", "png", "jpg", "jpeg", "tif", "tiff", "webp"],
+            key="profile_resume_reimport",
+        )
+        if st.button("Extract and add to my profile", key="profile_reimport_button"):
+            if not resume_upload:
+                st.warning("Upload a resume first.")
+            else:
+                import tempfile
+                extension = os.path.splitext(resume_upload.name)[1].lower()
+                try:
+                    with tempfile.NamedTemporaryFile(delete=False, suffix=extension) as tmp:
+                        tmp.write(resume_upload.getvalue())
+                        temp_path = tmp.name
+                    resume_text = extract_text(temp_path)
+                    found_projects = extract_projects(resume_text)
+                    found_entities = extract_entities(resume_text) if resume_text else {"skills": [], "roles": [], "tools": []}
+                    if not found_projects and not any(found_entities.get(k) for k in ("skills", "roles", "tools")):
+                        st.warning("I couldn't extract projects or skills from that file. Try a text-based PDF or DOCX.")
+                    else:
+                        current_profile = dict(st.session_state.profile)
+                        current_projects = current_profile.get("projects", []) or []
+                        projects_by_name = {
+                            str(p.get("name", p.get("title", ""))).strip().casefold(): p
+                            for p in current_projects if isinstance(p, dict) and str(p.get("name", p.get("title", ""))).strip()
+                        }
+                        for project in found_projects:
+                            key = project.get("name", "").strip().casefold()
+                            if key:
+                                projects_by_name[key] = project
+                        current_profile["projects"] = list(projects_by_name.values())
+                        for category in ("skills", "roles", "tools"):
+                            existing = current_profile.get(category, []) or []
+                            current_profile[category] = sorted(set(
+                                [str(v).strip() for v in existing + (found_entities.get(category, []) or []) if str(v).strip()]
+                            ))
+                        if update_profile(st.session_state.username, current_profile):
+                            st.session_state.profile = current_profile
+                            st.session_state.pop("_role_match_cache", None)
+                            st.success(f"Imported {len(found_projects)} project(s) and refreshed skills, roles, and tools.")
+                            st.rerun()
+                        else:
+                            st.error("Could not save the extracted information. Please log in again.")
+                except Exception as exc:
+                    st.error(f"Resume import failed: {exc}")
+                finally:
+                    try:
+                        os.unlink(temp_path)
+                    except (OSError, UnboundLocalError):
+                        pass
+
         with st.form("profile_edit_form"):
             st.markdown("#### Basic Info")
             col1, col2 = st.columns(2)
