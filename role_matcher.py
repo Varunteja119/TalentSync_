@@ -176,7 +176,7 @@ _SKILL_ALIASES = {
 def _skill_key(skill):
     """Normalize skill aliases and remove level qualifiers for role overlap."""
     s = re.sub(r"[-_/]+", " ", str(skill).lower()).strip()
-    s = re.sub(r"\\s+", " ", s)
+    s = re.sub(r"\s+", " ", s)
     kept = [w for w in s.split() if w not in _SKILL_QUALIFIERS]
     normalized = " ".join(kept) if kept else s
     return _SKILL_ALIASES.get(normalized, _SKILL_ALIASES.get(s, normalized))
