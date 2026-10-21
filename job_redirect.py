@@ -297,15 +297,16 @@ def fetch_live_job_listings(role, location="", limit=10, experience=None):
 
 # LinkedIn's job search URL supports an experience-level filter (f_E),
 # publicly documented and stable: 1=Internship, 2=Entry level,
-# 3=Associate, 4=Mid-Senior level, 5=Director, 6=Executive. Multiple
+# 3=Associate, 4=Mid-Senior level, 5=Director, 6=Executive. Use only the
+# Entry-level bucket for freshers so LinkedIn visibly checks that filter. Multiple
 # values are comma-separated. Reuses the SAME job_requirements bucket
 # values already used for JSearch (see EXPERIENCE_LEVELS above) so one
 # dropdown choice drives both the live listings and this static link,
 # rather than maintaining two separate experience vocabularies.
 _LINKEDIN_EXPERIENCE_CODES = {
-    "no_experience": "1,2",
+    "no_experience": "2",
     "under_3_years_experience": "2,3",
-    "more_than_3_years_experience": "3,4",
+    "more_than_3_years_experience": "4,5,6",
 }
 
 
