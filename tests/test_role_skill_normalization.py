@@ -25,6 +25,7 @@ class SkillNormalizationTests(unittest.TestCase):
 
     def test_rag_variants_normalize_to_same_skill(self):
         self.assertEqual(self.normalize("RAG"), "rag")
+        self.assertEqual(self.normalize("  RAG  "), "rag")
         self.assertEqual(self.normalize("retrieval-augmented generation"), "rag")
         self.assertEqual(self.normalize("retrieval augmented generation"), "rag")
 
