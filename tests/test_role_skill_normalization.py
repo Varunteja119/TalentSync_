@@ -5,22 +5,28 @@ from pathlib import Path
 
 
 class SkillNormalizationTests(unittest.TestCase):
+    """Regression tests for resume-skill alias normalization."""
     @classmethod
     def setUpClass(cls):
         source = Path(__file__).resolve().parents[1] / "role_matcher.py"
         tree = ast.parse(source.read_text(encoding="utf-8"))
-        wanted = {"_SKILL_ALIASES", "_SKILL_QUALIFIERS", "_skill_key"}
-        nodes = [node for node in tree.body if isinstance(node, (ast.Assign, ast.FunctionDef))
-                 and any(
-                     (isinstance(target, ast.Name) and target.id in wanted)
-                     for target in (node.targets if isinstance(node, ast.Assign) else [node])
-                 )]
+        nodes = []
+        for node in tree.body:
+            if isinstance(node, ast.Assign) and any(
+                isinstance(target, ast.Name)
+                and target.id in {"_SKILL_ALIASES", "_SKILL_QUALIFIERS"}
+                for target in node.targets
+            ):
+                nodes.append(node)
+            elif isinstance(node, ast.FunctionDef) and node.name == "_skill_key":
+                nodes.append(node)
         namespace = {"re": re}
         exec(compile(ast.Module(body=nodes, type_ignores=[]), str(source), "exec"), namespace)
         cls.normalize = staticmethod(namespace["_skill_key"])
 
     def test_rag_variants_normalize_to_same_skill(self):
         self.assertEqual(self.normalize("RAG"), "rag")
+        self.assertEqual(self.normalize("  RAG  "), "rag")
         self.assertEqual(self.normalize("retrieval-augmented generation"), "rag")
         self.assertEqual(self.normalize("retrieval augmented generation"), "rag")
 
@@ -34,6 +40,12 @@ class SkillNormalizationTests(unittest.TestCase):
 
     def test_qualifier_words_are_removed(self):
         self.assertEqual(self.normalize("Advanced NLP"), "natural language processing")
+
+    def test_normalization_is_case_insensitive(self):
+        self.assertEqual(self.normalize("PROMPT ENGINEERING"), "prompt engineering")
+
+    def test_multiple_spaces_are_collapsed(self):
+        self.assertEqual(self.normalize("  prompt   engineering  "), "prompt engineering")
 
 
 if __name__ == "__main__":

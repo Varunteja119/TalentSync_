@@ -348,7 +348,7 @@ def render_dashboard(profile):
                 "Use Profile → Edit Profile → Import from Resume to populate your skills and projects, "
                 "then matching can score these roles against your actual experience."
             )
-        for rec in recommendation_data[:3]:
+        for rec in recommendation_data[:5]:
             with st.container(border=True):
                 row_1, row_2 = st.columns([3, 1])
                 with row_1:
