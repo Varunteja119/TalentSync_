@@ -15,6 +15,10 @@ def _lazy_call(module_name, function_name, *args, **kwargs):
 def extract_basic_info(*args, **kwargs):
     return _lazy_call("utils", "extract_basic_info", *args, **kwargs)
 
+def extract_projects(*args, **kwargs):
+    return _lazy_call("utils", "extract_projects", *args, **kwargs)
+
+
 def extract_education_experience(*args, **kwargs):
     return _lazy_call("utils", "extract_education_experience", *args, **kwargs)
 
@@ -485,6 +489,23 @@ def render_profile_view(profile):
                     "description": description,
                 })
 
+            st.markdown("#### Projects")
+            existing_projects = profile.get("projects", []) or []
+            project_count_edit = st.number_input("Project entries", min_value=0, max_value=10, value=min(len(existing_projects), 10), step=1, key="profile_edit_project_count")
+            edited_projects = []
+            for i in range(int(project_count_edit)):
+                current_project = existing_projects[i] if i < len(existing_projects) and isinstance(existing_projects[i], dict) else {}
+                project_name = st.text_input(f"Project name {i+1}", value=current_project.get("name", current_project.get("title", "")), key=f"profile_edit_project_name_{i}")
+                description_value = current_project.get("description", "")
+                if isinstance(description_value, list):
+                    description_value = "\n".join(map(str, description_value))
+                project_description = st.text_area(f"Project description {i+1}", value=description_value, key=f"profile_edit_project_description_{i}")
+                tech_value = current_project.get("technologies", current_project.get("tools", []))
+                if not isinstance(tech_value, str):
+                    tech_value = ", ".join(map(str, tech_value or []))
+                technologies = st.text_input(f"Technologies {i+1} (comma-separated)", value=tech_value, key=f"profile_edit_project_technologies_{i}")
+                edited_projects.append({"name": project_name.strip(), "description": project_description.strip(), "technologies": [x.strip() for x in technologies.split(",") if x.strip()]})
+
             submitted = st.form_submit_button("💾 Save Profile")
 
         if submitted:
@@ -512,7 +533,7 @@ def render_profile_view(profile):
                 "linkedin": linkedin,
                 "education": edited_education,
                 "experience": edited_experience,
-                "projects": profile.get("projects", []),
+                "projects": [p for p in edited_projects if p["name"] or p["description"] or p["technologies"]],
                 "skills": merged_skills,
                 "roles": merged_roles,
                 "tools": merged_tools,
@@ -599,6 +620,32 @@ def render_profile_view(profile):
             st.write("**Tools:** " + ", ".join(tools))
         else:
             st.write("**Tools:** Not available")
+
+    with st.container(border=True):
+        st.markdown("### Projects")
+        projects = profile.get("projects", []) or []
+        if projects:
+            for project in projects:
+                if not isinstance(project, dict):
+                    st.write(f"- {project}")
+                    continue
+                project_name = project.get("name", project.get("title", "Project"))
+                st.markdown(f"**{project_name}**")
+                description = project.get("description", "")
+                if isinstance(description, list):
+                    for item in description:
+                        if str(item).strip():
+                            st.write(f"- {str(item).strip()}")
+                elif str(description).strip():
+                    for item in str(description).splitlines():
+                        if item.strip():
+                            st.write(f"- {item.strip().lstrip('-•* ')}")
+                technologies = project.get("technologies", project.get("tools", []))
+                if technologies:
+                    tech_text = technologies if isinstance(technologies, str) else ", ".join(map(str, technologies))
+                    st.caption(f"Technologies: {tech_text}")
+        else:
+            st.write("No projects added yet. Use Edit Profile or Resume Builder to add projects.")
 
     with st.container(border=True):
         st.markdown("### Experience")
@@ -901,6 +948,7 @@ if not st.session_state.logged_in:
         education_list = []
         experience_list = []
         extracted_edu_exp = {"education": [], "experience": []}
+        extracted_projects = []
 
         if option == "Upload Resume":
             uploaded_file = st.file_uploader(
@@ -919,6 +967,7 @@ if not st.session_state.logged_in:
                 text = extract_text(path)
                 basic = extract_basic_info(text)
                 extracted_edu_exp = extract_education_experience(text)
+                extracted_projects = extract_projects(text)
 
                 extracted = {"skills": [], "roles": [], "tools": []}
                 if callable(extract_entities):
@@ -1010,6 +1059,23 @@ if not st.session_state.logged_in:
             )
             education_list.append({"degree": degree, "field": field, "college": college, "date": edu_date})
 
+        st.markdown("### 🚀 Projects")
+        st.caption("Review detected projects and edit them before creating your account.")
+        project_count = st.number_input("How many projects?", min_value=0, max_value=10, value=min(len(extracted_projects), 10), step=1, key="signup_project_count")
+        project_list = []
+        for i in range(int(project_count)):
+            current_project = extracted_projects[i] if i < len(extracted_projects) else {}
+            project_name = st.text_input(f"Project name {i+1}", value=current_project.get("name", ""), key=f"signup_project_name_{i}")
+            description_value = current_project.get("description", "")
+            if isinstance(description_value, list):
+                description_value = "\n".join(description_value)
+            project_description = st.text_area(f"Project description {i+1}", value=description_value, key=f"signup_project_description_{i}")
+            tech_value = current_project.get("technologies", [])
+            if not isinstance(tech_value, str):
+                tech_value = ", ".join(tech_value or [])
+            technologies = st.text_input(f"Technologies {i+1} (comma-separated)", value=tech_value, key=f"signup_project_technologies_{i}")
+            project_list.append({"name": project_name.strip(), "description": project_description.strip(), "technologies": [x.strip() for x in technologies.split(",") if x.strip()]})
+
         st.markdown("### 💼 Experience")
         prefilled_experience = extracted_edu_exp.get("experience", [])
         num_exp = st.number_input(
@@ -1069,6 +1135,7 @@ if not st.session_state.logged_in:
             "linkedin": linkedin,
             "education": education_list,
             "experience": experience_list,
+            "projects": [p for p in project_list if p["name"] or p["description"] or p["technologies"]],
             "skills": entities["skills"],
             "roles": entities["roles"],
             "tools": entities["tools"]
