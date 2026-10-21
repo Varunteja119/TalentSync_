@@ -4,6 +4,7 @@ import json
 import re
 import datetime
 from auth import login, signup, update_profile
+from signup_prefill import build_signup_prefill_state
 import importlib
 
 # Load feature-specific modules only when their functionality is first used.
@@ -1068,21 +1069,15 @@ if not st.session_state.logged_in:
                 # the old empty widget state unless we seed the keys explicitly.
                 if is_new_resume:
                     st.session_state["_signup_processed_resume_hash"] = resume_fingerprint
-                    st.session_state["signup_skills"] = ", ".join(extracted.get("skills", []))
-                    st.session_state["signup_roles"] = ", ".join(extracted.get("roles", []))
-                    st.session_state["signup_tools"] = ", ".join(extracted.get("tools", []))
-                    st.session_state["signup_project_count"] = min(len(extracted_projects), 10)
-                    for project_index in range(min(len(extracted_projects), 10)):
-                        project = extracted_projects[project_index]
-                        st.session_state[f"signup_project_name_{project_index}"] = project.get("name", "")
-                        description = project.get("description", "")
-                        if isinstance(description, list):
-                            description = "\n".join(map(str, description))
-                        st.session_state[f"signup_project_description_{project_index}"] = description
-                        technologies = project.get("technologies", [])
-                        st.session_state[f"signup_project_technologies_{project_index}"] = (
-                            technologies if isinstance(technologies, str) else ", ".join(technologies or [])
+                    st.session_state.update(
+                        build_signup_prefill_state(
+                            basic,
+                            extracted,
+                            extracted_edu_exp.get("education", []),
+                            extracted_edu_exp.get("experience", []),
+                            extracted_projects,
                         )
+                    )
 
                 st.success("Resume processed successfully ✅")
                 st.info(
@@ -1101,21 +1096,23 @@ if not st.session_state.logged_in:
                     )
 
         st.markdown("### 👤 Basic Info")
-        name = st.text_input("Full Name", basic.get("name", ""))
+        name = st.text_input("Full Name", basic.get("name", ""), key="signup_name")
         dob = st.date_input(
             "Date of Birth",
-            value=datetime.date(2000, 1, 1),
+            value=None,
             min_value=datetime.date(1901, 1, 1),
-            max_value=datetime.date(2015, 12, 31)
+            max_value=datetime.date.today(),
+            key="signup_dob",
         )
-        email = st.text_input("Email", basic.get("email", ""))
-        phone = st.text_input("Phone", basic.get("phone", ""))
-        location = st.text_input("Location", basic.get("location", ""))
-        linkedin = st.text_input("LinkedIn", basic.get("linkedin", ""))
+        email = st.text_input("Email", basic.get("email", ""), key="signup_email")
+        phone = st.text_input("Phone", basic.get("phone", ""), key="signup_phone")
+        location = st.text_input("Location", basic.get("location", ""), key="signup_location")
+        linkedin = st.text_input("LinkedIn", basic.get("linkedin", ""), key="signup_linkedin")
         summary = st.text_area(
             "Professional Summary",
             value=basic.get("summary", ""),
             placeholder="Add a profile summary (optional). If left empty, resume generator will auto-create one.",
+            key="signup_summary",
         )
         raw_skills = st.text_area("Skills / Competencies", ", ".join(extracted["skills"]), key="signup_skills")
         raw_roles = st.text_input("Target Roles", ", ".join(extracted["roles"]), key="signup_roles")
@@ -1129,7 +1126,7 @@ if not st.session_state.logged_in:
             max_value=10,
             value=max(1, len(prefilled_education)),
             step=1,
-        )
+            key="signup_education_count",
         for i in range(num_edu):
             pre_edu = prefilled_education[i] if i < len(prefilled_education) else {}
             degree = st.text_input(
@@ -1183,7 +1180,7 @@ if not st.session_state.logged_in:
             max_value=20,
             value=len(prefilled_experience),
             step=1,
-        )
+            key="signup_experience_count",
         for i in range(num_exp):
             pre_exp = prefilled_experience[i] if i < len(prefilled_experience) else {}
             role = st.text_input(f"Role {i+1}", value=pre_exp.get("role", ""), key=f"role_manual_{i}")
