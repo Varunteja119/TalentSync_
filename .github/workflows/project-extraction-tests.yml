@@ -1,0 +1,20 @@
+name: Project extraction tests
+
+on:
+  pull_request:
+    branches: [master]
+  push:
+    branches: [fix/project-extraction-v2]
+
+jobs:
+  test-project-extraction:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Run project extraction tests
+        run: python -m unittest discover -s tests -p "test_*.py" -v
