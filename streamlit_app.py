@@ -1100,6 +1100,13 @@ if not st.session_state.logged_in:
                         "is readable/selectable; scanned PDFs may need OCR."
                     )
 
+        # Give signup widgets a new identity for each uploaded resume. Streamlit
+        # preserves keyed widget values across reruns; changing the suffix forces
+        # new resume-derived defaults to render instead of stale blank values.
+        signup_resume_widget_suffix = st.session_state.get(
+            "_signup_processed_resume_hash", "no-resume"
+        )
+
         st.markdown("### 👤 Basic Info")
         name = st.text_input("Full Name", basic.get("name", ""))
         dob = st.date_input(
@@ -1117,9 +1124,9 @@ if not st.session_state.logged_in:
             value=basic.get("summary", ""),
             placeholder="Add a profile summary (optional). If left empty, resume generator will auto-create one.",
         )
-        raw_skills = st.text_area("Skills / Competencies", ", ".join(extracted["skills"]), key="signup_skills")
-        raw_roles = st.text_input("Target Roles", ", ".join(extracted["roles"]), key="signup_roles")
-        raw_tools = st.text_input("Tools / Platforms", ", ".join(extracted["tools"]), key="signup_tools")
+        raw_skills = st.text_area("Skills / Competencies", ", ".join(extracted["skills"]), key=f"signup_skills_{signup_resume_widget_suffix}")
+        raw_roles = st.text_input("Target Roles", ", ".join(extracted["roles"]), key=f"signup_roles_{signup_resume_widget_suffix}")
+        raw_tools = st.text_input("Tools / Platforms", ", ".join(extracted["tools"]), key=f"signup_tools_{signup_resume_widget_suffix}")
 
         st.markdown("### 🎓 Education")
         prefilled_education = extracted_edu_exp.get("education", [])
@@ -1160,19 +1167,19 @@ if not st.session_state.logged_in:
 
         st.markdown("### 🚀 Projects")
         st.caption("Review projects detected from your resume. You can edit them before creating your account.")
-        project_count = st.number_input("Number of projects", min_value=0, max_value=10, value=min(len(extracted_projects), 10), step=1, key="signup_project_count")
+        project_count = st.number_input("Number of projects", min_value=0, max_value=10, value=min(len(extracted_projects), 10), step=1, key=f"signup_project_count_{signup_resume_widget_suffix}")
         project_list = []
         for i in range(int(project_count)):
             current_project = extracted_projects[i] if i < len(extracted_projects) else {}
-            project_name = st.text_input(f"Project name {i+1}", value=current_project.get("name", ""), key=f"signup_project_name_{i}")
+            project_name = st.text_input(f"Project name {i+1}", value=current_project.get("name", ""), key=f"signup_project_name_{signup_resume_widget_suffix}_{i}")
             description_value = current_project.get("description", "")
             if isinstance(description_value, list):
                 description_value = "\n".join(map(str, description_value))
-            project_description = st.text_area(f"Description / achievements {i+1}", value=description_value, key=f"signup_project_description_{i}")
+            project_description = st.text_area(f"Description / achievements {i+1}", value=description_value, key=f"signup_project_description_{signup_resume_widget_suffix}_{i}")
             tech_value = current_project.get("technologies", [])
             if not isinstance(tech_value, str):
                 tech_value = ", ".join(tech_value or [])
-            technologies = st.text_input(f"Technologies {i+1} (comma-separated)", value=tech_value, key=f"signup_project_technologies_{i}")
+            technologies = st.text_input(f"Technologies {i+1} (comma-separated)", value=tech_value, key=f"signup_project_technologies_{signup_resume_widget_suffix}_{i}")
             project_list.append({"name": project_name.strip(), "description": project_description.strip(), "technologies": [v.strip() for v in technologies.split(",") if v.strip()]})
 
         st.markdown("### 💼 Experience")
