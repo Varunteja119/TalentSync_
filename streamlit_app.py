@@ -498,7 +498,7 @@ def render_profile_view(profile):
                 project_name = st.text_input(f"Project name {i+1}", value=current_project.get("name", current_project.get("title", "")), key=f"profile_edit_project_name_{i}")
                 description_value = current_project.get("description", "")
                 if isinstance(description_value, list):
-                    description_value = "\\n".join(map(str, description_value))
+                    description_value = "\n".join(map(str, description_value))
                 project_description = st.text_area(f"Project description {i+1}", value=description_value, key=f"profile_edit_project_description_{i}")
                 tech_value = current_project.get("technologies", current_project.get("tools", []))
                 if not isinstance(tech_value, str):
@@ -1064,7 +1064,7 @@ if not st.session_state.logged_in:
             project_name = st.text_input(f"Project name {i+1}", value=current_project.get("name", ""), key=f"signup_project_name_{i}")
             description_value = current_project.get("description", "")
             if isinstance(description_value, list):
-                description_value = "\\n".join(map(str, description_value))
+                description_value = "\n".join(map(str, description_value))
             project_description = st.text_area(f"Description / achievements {i+1}", value=description_value, key=f"signup_project_description_{i}")
             tech_value = current_project.get("technologies", [])
             if not isinstance(tech_value, str):
