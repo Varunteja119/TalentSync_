@@ -38,6 +38,14 @@ class JobLocationDefaultTests(unittest.TestCase):
         # LinkedIn should receive its actual entry-level checkbox value for a fresher.
         self.assertIn("f_E=2", generate_job_links("AI Engineer", experience="no_experience")["linkedin"])
 
+    def test_linkedin_experience_filter_is_encoded_as_single_value(self):
+        links = generate_job_links("AI Engineer", experience="more_than_3_years_experience")
+        parsed = urlparse(links["linkedin"])
+        query = parse_qs(parsed.query)
+        self.assertEqual(query.get("f_E"), ["4,5,6"])
+        self.assertIn("f_E=4%2C5%2C6", links["linkedin"])
+        self.assertEqual(query.get("location"), ["UAE"])
+
     def test_naukri_keywords_are_comma_separated(self):
         role = "Generative AI Engineer OR NLP Engineer OR LLM Application Engineer"
         links = generate_job_links(role, location="UAE")
@@ -46,7 +54,8 @@ class JobLocationDefaultTests(unittest.TestCase):
         keywords = unquote(query.get("k", [""])[0])
         self.assertEqual(keywords, "Generative AI Engineer,NLP Engineer,LLM Application Engineer")
         self.assertNotIn(" OR ", keywords)
-        self.assertIn("jobs-in-uae", parsed.path)
+        self.assertIn("generative-ai-engineer-jobs-in-uae", parsed.path)
+        self.assertEqual(query.get("l"), ["UAE"])
 
     def test_explicit_location_overrides_uae_default(self):
         links = generate_job_links("AI Engineer", location="Dubai, United Arab Emirates")
