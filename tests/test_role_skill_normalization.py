@@ -39,6 +39,9 @@ class SkillNormalizationTests(unittest.TestCase):
     def test_qualifier_words_are_removed(self):
         self.assertEqual(self.normalize("Advanced NLP"), "natural language processing")
 
+    def test_normalization_is_case_insensitive(self):
+        self.assertEqual(self.normalize("PROMPT ENGINEERING"), "prompt engineering")
+
     def test_multiple_spaces_are_collapsed(self):
         self.assertEqual(self.normalize("  prompt   engineering  "), "prompt engineering")
 
