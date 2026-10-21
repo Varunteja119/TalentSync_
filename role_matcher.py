@@ -401,7 +401,7 @@ def match_roles(candidate_skills, candidate_roles=None, candidate_tools=None, ca
 
         job_links = generate_job_links(
             role_name,
-            location=candidate_location or "India",
+            location=candidate_location or "UAE",
             experience=candidate_experience,
         )
 
