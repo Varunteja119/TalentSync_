@@ -123,6 +123,8 @@ def _parse_role_company(text):
     if ":" in value:
         left, right = (part.strip() for part in value.split(":", 1))
         if left and right and _looks_like_job_text(right):
+            if re.search(r"\b(construction|project|site|road|highway|ring road)\b", left, re.I):
+                return right, ""
             return right, left
     if " at " in value.lower():
         parts = re.split(r"\s+at\s+", value, flags=re.IGNORECASE, maxsplit=1)
@@ -412,6 +414,10 @@ def _extract_experience_from_lines(lines):
 
 def _infer_degree(line):
     lower = line.lower()
+    if re.search(r"\bintermediate\b", lower):
+        return "Intermediate"
+    if re.search(r"\bhigh school\b", lower):
+        return "High School"
     if "class xii" in lower or "higher secondary" in lower or "senior secondary" in lower or "12th" in lower or "grade 12" in lower or "hsc" in lower:
         return "Senior Secondary"
     if "class x" in lower or "10th" in lower or "grade 10" in lower or "ssc" in lower or ("secondary" in lower and "senior" not in lower):
@@ -466,10 +472,11 @@ def _extract_structured_education(edu_lines):
         degree_line = next((ln for ln in detail_lines if _infer_degree(ln)), "")
         degree = _infer_degree(degree_line)
 
-        college = next(
+        college_raw = next(
             (ln for ln in detail_lines if any(k in ln.lower() for k in ["college", "university", "institute", "school"])),
             "",
         )
+        college = re.sub(r"\s+\d+(?:\.\d+)?\s*(?:CGPA|GPA)\b.*$", "", college_raw, flags=re.I).strip(" ,")
 
         field = ""
         for ln in detail_lines:
@@ -624,7 +631,7 @@ def extract_projects(text):
         # Only suppress a likely wrapped continuation, not every new title
         # after a bullet whose sentence happens to omit terminal punctuation.
         continuation_start = bool(re.match(
-            r"^(?:and|or|for|of|with|using|their|its|hotspots|satellite|imagery|indices|derived|correlation)\b",
+            r"^(?:and|or|for|of|with|using|their|its|hotspots|satellite|imagery|indices|derived|correlation|arcgis|qgis|erdas imagine|landsat)\b",
             title_candidate, re.I,
         ))
         wrapped_continuation = previous_sentence_incomplete and continuation_start and not re.search(r"[-–—:]", title_candidate)
