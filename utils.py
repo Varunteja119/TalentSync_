@@ -527,7 +527,7 @@ def extract_projects(text):
         "STAAD-Pro", "Primavera P6", "MS Office", "Microsoft Excel", "MS Excel",
         "Power BI", "Tableau", "Python", "Java", "SQL", "R", "TensorFlow",
         "Scikit-learn", "FastAPI", "Streamlit", "GitHub Actions", "PostgreSQL",
-        "Celery", "Redis", "ChromaDB", "SentenceTransformer", "Mistral",
+        "Celery", "Redis", "ChromaDB", "Mistral",
         "Google Cloud", "AWS", "Docker", "Jira", "Confluence", "Visio",
     ]
     projects, current = [], None
@@ -565,8 +565,10 @@ def extract_projects(text):
         # description as useful context because the signup form has no date field.
         date_match = date_range.search(clean)
         title_candidate = date_range.sub("", clean).strip(" -–—,.:")
+        first_alpha = next((char for char in title_candidate if char.isalpha()), "")
         looks_like_heading = (
             not bullet
+            and bool(first_alpha) and first_alpha.isupper()
             and len(title_candidate.split()) <= 28
             and not re.search(r"[.!?]$", title_candidate)
             and not re.match(r"^(?:analyzed|analysed|developed|built|created|implemented|designed|derived|worked|used|responsible|involved|studied|led|managed|achieved)\b", title_candidate, re.I)
