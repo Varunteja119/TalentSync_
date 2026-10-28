@@ -412,6 +412,10 @@ def _extract_experience_from_lines(lines):
 
 def _infer_degree(line):
     lower = line.lower()
+    if re.match(r"^\s*intermediate\b", lower):
+        return "Intermediate"
+    if re.match(r"^\s*high school\b", lower):
+        return "High School"
     if "class xii" in lower or "higher secondary" in lower or "senior secondary" in lower or "12th" in lower or "grade 12" in lower or "hsc" in lower:
         return "Senior Secondary"
     if "class x" in lower or "10th" in lower or "grade 10" in lower or "ssc" in lower or ("secondary" in lower and "senior" not in lower):
@@ -466,10 +470,24 @@ def _extract_structured_education(edu_lines):
         degree_line = next((ln for ln in detail_lines if _infer_degree(ln)), "")
         degree = _infer_degree(degree_line)
 
-        college = next(
-            (ln for ln in detail_lines if any(k in ln.lower() for k in ["college", "university", "institute", "school"])),
+        # A qualification label such as "High School" may itself contain
+        # an institution keyword. Prefer an institution line that is not also
+        # the qualification/date line; otherwise "High School" can mask the
+        # actual school name on the next line.
+        college_raw = next(
+            (
+                ln for ln in detail_lines
+                if any(k in ln.lower() for k in ["college", "university", "institute", "school"])
+                and not re.match(
+                    r"^\s*(?:intermediate|high school|class\s*x(?:ii)?|higher secondary|senior secondary|"
+                    r"b\.?tech|bachelor(?:'s)?|master(?:'s)?|m\.?tech|m\.?sc|mba|diploma|phd)\b",
+                    ln,
+                    re.I,
+                )
+            ),
             "",
         )
+        college = re.sub(r"\s+\d+(?:\.\d+)?\s*(?:CGPA|GPA)\b.*$", "", college_raw, flags=re.I).strip(" ,")
 
         field = ""
         for ln in detail_lines:
@@ -624,7 +642,7 @@ def extract_projects(text):
         # Only suppress a likely wrapped continuation, not every new title
         # after a bullet whose sentence happens to omit terminal punctuation.
         continuation_start = bool(re.match(
-            r"^(?:and|or|for|of|with|using|their|its|hotspots|satellite|imagery|indices|derived|correlation)\b",
+            r"^(?:and|or|for|of|with|using|their|its|hotspots|satellite|imagery|indices|derived|correlation|arcgis|qgis|erdas imagine|landsat)\b",
             title_candidate, re.I,
         ))
         wrapped_continuation = previous_sentence_incomplete and continuation_start and not re.search(r"[-–—:]", title_candidate)
@@ -716,8 +734,13 @@ def extract_education_experience(text):
             cleaned_line = _strip_date_range(line) if has_date_range else line
             lower = cleaned_line.lower()
 
-            if any(k in lower for k in ["college", "university", "institute", "school"]) and not current_edu["college"]:
-                current_edu["college"] = cleaned_line
+            if (
+                any(k in lower for k in ["college", "university", "institute", "school"])
+                and not current_edu["college"]
+                and not re.match(r"^\s*(?:intermediate|high school)\b", cleaned_line, re.I)
+            ):
+                institution = re.sub(r"\s+\d+(?:\.\d+)?\s*(?:CGPA|GPA)\b.*$", "", cleaned_line, flags=re.I).strip(" ,")
+                current_edu["college"] = institution or cleaned_line
                 continue
 
             if any(k in lower for k in ["cgpa", "gpa", "percentage", "%", "field", "major", "specialization"]) and not current_edu["field"]:

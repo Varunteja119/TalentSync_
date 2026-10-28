@@ -161,6 +161,17 @@ class ExtractProjectsTests(unittest.TestCase):
             self.assertIn(tool, project["technologies"])
 
         result = extract_education_experience(resume)
+        education = result["education"]
+        self.assertEqual(len(education), 3, education)
+        self.assertEqual(education[0]["degree"], "Bachelors")
+        self.assertIn("SASTRA Deemed to be University", education[0]["college"])
+        self.assertNotIn("7.8 CGPA", education[0]["college"])
+        self.assertEqual(education[1]["degree"], "Intermediate")
+        self.assertIn("Sri Chaitanya Junior College", education[1]["college"])
+        self.assertNotIn("9.94 CGPA", education[1]["college"])
+        self.assertEqual(education[2]["degree"], "High School")
+        self.assertIn("Indus High School", education[2]["college"])
+        self.assertNotIn("9.8 GPA", education[2]["college"])
         experience = result["experience"]
         self.assertEqual(len(experience), 2, experience)
         junior = next(item for item in experience if "Junior Site Engineer" in item["role"])
