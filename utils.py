@@ -612,7 +612,7 @@ def extract_projects(text):
         # every tool starts with a capital letter (e.g. "ArcGIS, QGIS, ...").
         technology_only_line = bool(title_candidate) and all(
             any(re.fullmatch(re.escape(tool), part.strip(), re.I) for tool in known_technologies)
-            for part in re.split(r"[,;|]", re.sub(r"\band\b", ",", title_candidate, flags=re.I))
+            for part in re.split(r"[,;|]", re.sub(r"\band\b", ",", title_candidate, flags=re.I)) if part.strip()
         )
         # PDF text extraction wraps prose at arbitrary points. If the previous
         # description line has no sentence-ending punctuation, a capitalized
