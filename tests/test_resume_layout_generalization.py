@@ -26,7 +26,7 @@ Python, SQL
     assert "Sample Junior College" in education[1]["college"]
     assert "Northside High School" in education[2]["college"]
     assert all(not item["field"] for item in education), education
-    assert all(not re.search(r"\\b(?:CGPA|GPA)\\b", item["college"], re.I) for item in education)
+    assert all(not re.search(r"\b(?:CGPA|GPA)\b", item["college"], re.I) for item in education)
 
 
 def test_wrapped_project_title_with_date_on_continuation_line_stays_one_project():
