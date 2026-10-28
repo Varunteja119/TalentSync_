@@ -158,6 +158,14 @@ ROLE_HINTS = {
 # Common cross-domain methods that should be retained when explicitly stated.
 # This is an evidence list, not a closed vocabulary: LLM and section-token terms
 # remain open-vocabulary.
+EXPLICIT_ROLE_PHRASES = (
+    "junior site engineer", "trainee civil engineer", "civil engineer",
+    "entry-level data analyst", "data analyst", "junior data analyst",
+    "junior software engineer", "software engineer", "software developer",
+    "junior business analyst", "business analyst", "business analysis intern",
+)
+
+
 EXPLICIT_SKILL_PHRASES = (
     "structural analysis", "construction planning", "site execution",
     "technical drawing interpretation", "quantity estimation",
@@ -610,6 +618,12 @@ def extract_entities(text: str):
         fallback_results = empty
 
     result = _merge_entity_lists(llm_results, ner_results, fallback_results)
+    normalized_text = re.sub(r"[^a-z0-9]+", " ", text.lower()).strip()
+    for phrase in EXPLICIT_ROLE_PHRASES:
+        normalized_phrase = re.sub(r"[^a-z0-9]+", " ", phrase.lower()).strip()
+        if re.search(r"(?<![a-z0-9])" + re.escape(normalized_phrase) + r"(?![a-z0-9])", normalized_text):
+            result["roles"].append(phrase)
+    result["roles"] = sorted(set(result["roles"]))
 
     # Model/heuristic role predictions must be grounded in a title explicitly
     # present in the resume. This intentionally prefers precision over guesses.
