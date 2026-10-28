@@ -739,7 +739,7 @@ def extract_education_experience(text):
             if (
                 any(k in lower for k in ["college", "university", "institute", "school"])
                 and not current_edu["college"]
-                and not re.match(r"^\\s*(?:intermediate|high school)\\b", cleaned_line, re.I)
+                and not re.match(r"^\s*(?:intermediate|high school)\b", cleaned_line, re.I)
             ):
                 institution = re.sub(r"\s+\d+(?:\.\d+)?\s*(?:CGPA|GPA)\b.*$", "", cleaned_line, flags=re.I).strip(" ,")
                 current_edu["college"] = institution or cleaned_line
