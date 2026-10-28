@@ -480,7 +480,7 @@ def _extract_structured_education(edu_lines):
 
 
 def extract_projects(text):
-    """Extract projects from an explicitly titled Projects section."""
+    """Extract project titles, descriptions, dates, and technologies from resume text."""
     lines = _clean_lines(text or "")
     section_titles = {"PROJECT", "PROJECTS", "PERSONAL PROJECTS", "ACADEMIC PROJECTS"}
     start = None
@@ -494,47 +494,93 @@ def extract_projects(text):
     end = len(lines)
     boundary_keys = [key for key in ALL_SECTION_KEYS if key not in {"PROJECT", "PROJECTS"}]
     boundary_keys += ["TECHNICAL SKILLS", "TECHNICAL SKILL", "ADDITIONAL INFORMATION",
-                      "CERTIFICATIONS", "ACHIEVEMENTS", "LANGUAGES"]
+                      "CERTIFICATIONS", "ACHIEVEMENTS", "LANGUAGES", "CERTIFICATIONS & SPECIALIZED TRAINING"]
     for index in range(start, len(lines)):
         line = lines[index]
-        if len(line.split()) <= 4 and any(
+        if len(line.split()) <= 5 and any(
             re.search(rf"\b{re.escape(key)}S?\b", line.upper())
             for key in boundary_keys
         ):
             end = index
             break
 
+    section_lines = lines[start:end]
+    bullet_pattern = r"^\s*[•●○▪▫◦‣⁃∙·◾➢➤✓✔*\-\uf0b7\uf0a7\uf0d8]\s*"
+    date_range = re.compile(
+        r"\b((?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s*\d{4})\s*[-–—to]+\s*((?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s*\d{4}|Present|Current)\b",
+        re.I,
+    )
+    # PDF extraction often splits a long project heading and its date across
+    # adjacent lines. Join that heading before parsing so the date isn't mistaken
+    # for the project name and the first title line isn't lost.
+    prepared = []
+    for line in section_lines:
+        if date_range.search(line) and prepared:
+            previous = prepared[-1]
+            if not re.match(bullet_pattern, previous) and not re.match(bullet_pattern, line):
+                prepared[-1] = previous + " " + line
+                continue
+        prepared.append(line)
+
+    known_technologies = [
+        "ERDAS Imagine", "ArcGIS", "QGIS", "Landsat", "AutoCAD", "STAAD Pro",
+        "STAAD-Pro", "Primavera P6", "MS Office", "Microsoft Excel", "MS Excel",
+        "Power BI", "Tableau", "Python", "Java", "SQL", "R", "TensorFlow",
+        "Scikit-learn", "FastAPI", "Streamlit", "GitHub Actions", "PostgreSQL",
+        "Celery", "Redis", "ChromaDB", "Mistral",
+        "Google Cloud", "AWS", "Docker", "Jira", "Confluence", "Visio",
+    ]
     projects, current = [], None
 
     def finish():
         nonlocal current
-        if current and current["name"]:
-            current["description"] = "\n".join(current["description"]).strip()
-            current["technologies"] = list(dict.fromkeys(current["technologies"]))
-            projects.append(current)
+        if not current or not current["name"]:
+            current = None
+            return
+        current["description"] = "\n".join(current["description"]).strip()
+        # Merge explicit stack labels with tool names explicitly mentioned in
+        # the description. Only emit known names that actually occur in text.
+        combined_text = current["name"] + "\n" + current["description"]
+        for technology in known_technologies:
+            if re.search(rf"(?<!\w){re.escape(technology)}(?!\w)", combined_text, re.I):
+                current["technologies"].append(technology)
+        current["technologies"] = list(dict.fromkeys(current["technologies"]))
+        projects.append(current)
         current = None
 
-    for line in lines[start:end]:
-        # PDFs frequently omit the space after a bullet (e.g. "•Implemented").
-        # Treat those as bullets too, otherwise the sentence can be misread as a title.
-        # PDF extractors often encode bullets with private-use glyphs
-        # (such as U+F0B7) or alternate Unicode bullets. Strip them so a
-        # wrapped achievement is not mistaken for a project heading.
-        bullet_pattern = r"^\s*[•●○▪▫◦‣⁃∙·◾➢➤✓✔*\-\uf0b7\uf0a7\uf0d8]\s*"
+    for line in prepared:
         bullet = bool(re.match(bullet_pattern, line))
         clean = re.sub(bullet_pattern, "", line).strip()
         if not clean:
             continue
+
         tech = re.match(r"^(?:Technologies|Tech(?:nology)? Stack|Tools)\s*:\s*(.+)$", clean, re.I)
         if tech and current:
             current["technologies"].extend(
                 item.strip() for item in re.split(r"[,;|]", tech.group(1)) if item.strip()
             )
-        elif not bullet and len(clean.split()) <= 14 and not re.search(r"[.!?]$", clean):
+            continue
+
+        # Separate the date range from the heading. Keep the period in the
+        # description as useful context because the signup form has no date field.
+        date_match = date_range.search(clean)
+        title_candidate = date_range.sub("", clean).strip(" -–—,.:")
+        first_alpha = next((char for char in title_candidate if char.isalpha()), "")
+        looks_like_heading = (
+            not bullet
+            and bool(first_alpha) and first_alpha.isupper()
+            and len(title_candidate.split()) <= 28
+            and not re.search(r"[.!?]$", title_candidate)
+            and not re.match(r"^(?:analyzed|analysed|developed|built|created|implemented|designed|derived|worked|used|responsible|involved|studied|led|managed|achieved)\b", title_candidate, re.I)
+        )
+        if looks_like_heading and title_candidate:
             finish()
-            current = {"name": clean, "description": [], "technologies": []}
+            current = {"name": title_candidate, "description": [], "technologies": []}
+            if date_match:
+                current["description"].append(f"Project period: {date_match.group(1)} – {date_match.group(2)}")
         elif current:
             current["description"].append(clean)
+
     finish()
     return projects[:10]
 
