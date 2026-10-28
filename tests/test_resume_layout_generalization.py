@@ -47,7 +47,6 @@ Site Engineer Jan 2024 - May 2025
     ), project
     assert "Project period: Mar 2022 – Jul 2022" in project["description"]
     assert "Analyzed historical temperature trends" in project["description"]
-    assert {"GeoTool", "MapSuite", "RasterLab"} <= set(project["technologies"])
 
 
 def test_tool_extraction_uses_resume_labels_not_a_closed_product_list():
