@@ -414,9 +414,9 @@ def _extract_experience_from_lines(lines):
 
 def _infer_degree(line):
     lower = line.lower()
-    if re.search(r"\bintermediate\b", lower):
+    if re.match(r"^\s*intermediate\b", lower):
         return "Intermediate"
-    if re.search(r"\bhigh school\b", lower):
+    if re.match(r"^\s*high school\b", lower):
         return "High School"
     if "class xii" in lower or "higher secondary" in lower or "senior secondary" in lower or "12th" in lower or "grade 12" in lower or "hsc" in lower:
         return "Senior Secondary"
