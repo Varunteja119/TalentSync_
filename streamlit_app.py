@@ -1112,26 +1112,24 @@ if not st.session_state.logged_in:
                     )
 
         st.markdown("### 👤 Basic Info")
-        name = st.text_input("Full Name", basic.get("name", ""), key="signup_name")
+        name = st.text_input("Full Name", key="signup_name")
         dob = st.date_input(
             "Date of Birth",
-            value=None,
             min_value=datetime.date(1901, 1, 1),
             max_value=datetime.date.today(),
             key="signup_dob",
         )
-        email = st.text_input("Email", basic.get("email", ""), key="signup_email")
-        phone = st.text_input("Phone", basic.get("phone", ""), key="signup_phone")
-        location = st.text_input("Location", basic.get("location", ""), key="signup_location")
-        linkedin = st.text_input("LinkedIn", basic.get("linkedin", ""), key="signup_linkedin")
+        email = st.text_input("Email", key="signup_email")
+        phone = st.text_input("Phone", key="signup_phone")
+        location = st.text_input("Location", key="signup_location")
+        linkedin = st.text_input("LinkedIn", key="signup_linkedin")
         summary = st.text_area(
             "Professional Summary",
-            value=basic.get("summary", ""),
             placeholder="Add a profile summary (optional). If left empty, resume generator will auto-create one.",
             key="signup_summary",
         )
-        raw_skills = st.text_area("Skills / Competencies", ", ".join(extracted["skills"]), key="signup_skills")
-        raw_tools = st.text_input("Tools / Platforms", ", ".join(extracted["tools"]), key="signup_tools")
+        raw_skills = st.text_area("Skills / Competencies", key="signup_skills")
+        raw_tools = st.text_input("Tools / Platforms", key="signup_tools")
 
         st.markdown("### 🎓 Education")
         prefilled_education = extracted_edu_exp.get("education", [])
@@ -1139,7 +1137,6 @@ if not st.session_state.logged_in:
             "How many education entries?",
             min_value=1,
             max_value=10,
-            value=max(1, len(prefilled_education)),
             step=1,
             key="signup_education_count",
         )
@@ -1147,17 +1144,15 @@ if not st.session_state.logged_in:
             pre_edu = prefilled_education[i] if i < len(prefilled_education) else {}
             degree = st.text_input(
                 f"Degree Name {i+1}",
-                value=pre_edu.get("degree", ""),
                 placeholder="e.g. B.Tech, B.E., M.Sc, MBA",
                 key=f"deg_manual_{i}",
             )
             field = st.text_input(
                 f"Specialization/Field {i+1}",
-                value=pre_edu.get("field", ""),
                 placeholder="e.g. Computer Science Engineering",
                 key=f"field_manual_{i}",
             )
-            college = st.text_input(f"College {i+1}", value=pre_edu.get("college", ""), key=f"college_manual_{i}")
+            college = st.text_input(f"College {i+1}", key=f"college_manual_{i}")
             pre_date = pre_edu.get("date", "")
             if not pre_date:
                 from_d = pre_edu.get("from", "")
@@ -1165,7 +1160,6 @@ if not st.session_state.logged_in:
                 pre_date = f"{from_d} - {to_d}".strip(" -") if (from_d or to_d) else ""
             edu_date = st.text_input(
                 f"Date {i+1}",
-                value=pre_date,
                 placeholder="e.g. 2018 - 2022",
                 key=f"edu_date_manual_{i}",
             )
@@ -1173,19 +1167,19 @@ if not st.session_state.logged_in:
 
         st.markdown("### 🚀 Projects")
         st.caption("Review projects detected from your resume. You can edit them before creating your account.")
-        project_count = st.number_input("Number of projects", min_value=0, max_value=10, value=min(len(extracted_projects), 10), step=1, key="signup_project_count")
+        project_count = st.number_input("Number of projects", min_value=0, max_value=10, step=1, key="signup_project_count")
         project_list = []
         for i in range(int(project_count)):
             current_project = extracted_projects[i] if i < len(extracted_projects) else {}
-            project_name = st.text_input(f"Project name {i+1}", value=current_project.get("name", ""), key=f"signup_project_name_{i}")
+            project_name = st.text_input(f"Project name {i+1}", key=f"signup_project_name_{i}")
             description_value = current_project.get("description", "")
             if isinstance(description_value, list):
                 description_value = "\n".join(map(str, description_value))
-            project_description = st.text_area(f"Description / achievements {i+1}", value=description_value, key=f"signup_project_description_{i}")
+            project_description = st.text_area(f"Description / achievements {i+1}", key=f"signup_project_description_{i}")
             tech_value = current_project.get("technologies", [])
             if not isinstance(tech_value, str):
                 tech_value = ", ".join(tech_value or [])
-            technologies = st.text_input(f"Technologies {i+1} (comma-separated)", value=tech_value, key=f"signup_project_technologies_{i}")
+            technologies = st.text_input(f"Technologies {i+1} (comma-separated)", key=f"signup_project_technologies_{i}")
             project_list.append({"name": project_name.strip(), "description": project_description.strip(), "technologies": [v.strip() for v in technologies.split(",") if v.strip()]})
 
         st.markdown("### 💼 Experience")
@@ -1194,14 +1188,13 @@ if not st.session_state.logged_in:
             "How many experience entries?",
             min_value=0,
             max_value=20,
-            value=len(prefilled_experience),
             step=1,
             key="signup_experience_count",
         )
         for i in range(num_exp):
             pre_exp = prefilled_experience[i] if i < len(prefilled_experience) else {}
-            role = st.text_input(f"Role {i+1}", value=pre_exp.get("role", ""), key=f"role_manual_{i}")
-            company = st.text_input(f"Company {i+1}", value=pre_exp.get("company", ""), key=f"comp_manual_{i}")
+            role = st.text_input(f"Role {i+1}", key=f"role_manual_{i}")
+            company = st.text_input(f"Company {i+1}", key=f"comp_manual_{i}")
             pre_exp_date = pre_exp.get("date", "")
             if not pre_exp_date:
                 from_d = pre_exp.get("from", "")
@@ -1209,13 +1202,11 @@ if not st.session_state.logged_in:
                 pre_exp_date = f"{from_d} - {to_d}".strip(" -") if (from_d or to_d) else ""
             exp_date = st.text_input(
                 f"Date {i+1}",
-                value=pre_exp_date,
                 placeholder="e.g. Jan 2023 - Mar 2026",
                 key=f"exp_date_manual_{i}",
             )
             work_summary = st.text_area(
                 f"Work Description {i+1}",
-                value=pre_exp.get("description", ""),
                 key=f"work_desc_manual_{i}",
             )
             experience_list.append({"role": role, "company": company, "date": exp_date, "description": work_summary})
