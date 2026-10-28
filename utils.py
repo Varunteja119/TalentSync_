@@ -108,6 +108,15 @@ def _parse_role_company(text):
     value = text.strip(" -|,:")
     if not value:
         return "", ""
+    # Common internship format: "INTERNSHIP Employer : Role".
+    # Keep the employer in the company field instead of treating the entire
+    # heading as a role and later misclassifying description text as company.
+    internship_match = re.match(
+        r"^INTERNSHIP\s+(.+?)\s*:\s*(.+)$", value, re.IGNORECASE
+    )
+    if internship_match:
+        employer, role = internship_match.groups()
+        return role.strip(), employer.strip()
     if " at " in value.lower():
         parts = re.split(r"\s+at\s+", value, flags=re.IGNORECASE, maxsplit=1)
         return parts[0].strip(), parts[1].strip() if len(parts) > 1 else ""
@@ -368,12 +377,18 @@ def _extract_experience_from_lines(lines):
                         pieces.append(" " + cleaned)
                 description = "".join(pieces).strip()
 
+        # Never infer an employer from a work-description sentence merely
+        # because it contains commas. Descriptions commonly list activities
+        # and are not reliable evidence of a company name.
         if not company and description:
             desc_lower = description.lower()
-            company_markers = ["pvt", "ltd", "llp", "inc", "corp", "technologies", "solutions", "systems"]
-            if any(m in desc_lower for m in company_markers) or "," in description:
-                company = description
-                description = ""
+            company_markers = [" pvt", " ltd", " llp", " inc", " corp", " technologies", " solutions", " systems"]
+            if any(m in f" {desc_lower}" for m in company_markers):
+                # Only promote a short company-like line, never a full sentence.
+                first_line = description.splitlines()[0].strip()
+                if len(first_line.split()) <= 8 and not re.search(r"[.!?]", first_line):
+                    company = first_line
+                    description = "\n".join(description.splitlines()[1:]).strip()
 
         experience.append(
             {
