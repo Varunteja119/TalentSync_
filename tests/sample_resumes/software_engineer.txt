@@ -1,0 +1,11 @@
+SAMPLE CANDIDATE
+SUMMARY
+Junior Software Engineer focused on backend APIs and web applications.
+SKILLS
+REST API design, unit testing, debugging, object-oriented programming, asynchronous task processing, containerization, CI/CD.
+TOOLS
+Python, FastAPI, PostgreSQL, Redis, Celery, Docker, GitHub Actions.
+EXPERIENCE
+Software Developer Intern, 2025. Implemented API endpoints, wrote pytest tests, optimized database queries, and configured Docker-based development environments.
+PROJECTS
+Built a task scheduling service using Redis queues and Celery workers.
