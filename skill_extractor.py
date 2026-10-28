@@ -218,7 +218,7 @@ def _extract_section_tokens(text: str):
     are not skills. Conversely, treating every line beginning with "Tools:"
     as a section heading drops the actual tool names. This handles both.
     """
-    lines = [re.sub(r"\\s+", " ", ln).strip() for ln in text.splitlines() if ln.strip()]
+    lines = [re.sub(r"\s+", " ", ln).strip() for ln in text.splitlines() if ln.strip()]
     section_headers = {
         "skills", "technical skills", "core competencies", "expertise", "tools",
         "technical expertise", "key skills", "areas of expertise",
@@ -234,8 +234,8 @@ def _extract_section_tokens(text: str):
     def header_and_payload(line):
         if ":" in line:
             left, right = line.split(":", 1)
-            return re.sub(r"\\s+", " ", left.lower()).strip(), right.strip(), True
-        return re.sub(r"\\s+", " ", line.lower()).strip(), "", False
+            return re.sub(r"\s+", " ", left.lower()).strip(), right.strip(), True
+        return re.sub(r"\s+", " ", line.lower()).strip(), "", False
 
     def is_header(line, vocabulary):
         label, payload, has_colon = header_and_payload(line.strip().strip("•▪▫*- "))
@@ -284,13 +284,13 @@ def _extract_section_tokens(text: str):
 
         parts = re.split(r"[,;|•●▪▫]+", line)
         for part in parts:
-            token = re.sub(r"\\s+", " ", part).strip(" -:\\t")
-            token = re.sub(r"^(?:and|or)\\s+", "", token, flags=re.I).strip()
+            token = re.sub(r"\s+", " ", part).strip(" -:\t")
+            token = re.sub(r"^(?:and|or)\s+", "", token, flags=re.I).strip()
             if not (2 <= len(token) <= 50):
                 continue
             if token.lower() in category_labels or len(token.split()) > 7:
                 continue
-            if re.match(r"^(?:tools?|skills?|software|office|documentation)\\s*:", token, re.I):
+            if re.match(r"^(?:tools?|skills?|software|office|documentation)\s*:", token, re.I):
                 continue
             tokens.add(token.lower())
 
