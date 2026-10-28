@@ -724,7 +724,8 @@ def extract_education_experience(text):
             lower = cleaned_line.lower()
 
             if any(k in lower for k in ["college", "university", "institute", "school"]) and not current_edu["college"]:
-                current_edu["college"] = cleaned_line
+                institution = re.sub(r"\s+\d+(?:\.\d+)?\s*(?:CGPA|GPA)\b.*$", "", cleaned_line, flags=re.I).strip(" ,")
+                current_edu["college"] = institution or cleaned_line
                 continue
 
             if any(k in lower for k in ["cgpa", "gpa", "percentage", "%", "field", "major", "specialization"]) and not current_edu["field"]:
