@@ -1060,30 +1060,25 @@ if not st.session_state.logged_in:
                 extracted_edu_exp = extract_education_experience(text)
                 extracted_projects = extract_projects(text)
 
-                extracted = {"skills": [], "roles": [], "tools": []}
-                if callable(extract_entities):
-                    try:
-                        if not st.session_state.get("_nlp_warmed_up"):
-                            with st.spinner("Loading NLP model (first time only)..."):
-                                extracted = extract_entities(text)
-                            st.session_state["_nlp_warmed_up"] = True
-                        else:
-                            extracted = extract_entities(text)
-                    except Exception:
-                        extracted = {"skills": [], "roles": [], "tools": []}
+                def _run_signup_entity_extraction(resume_text):
+                    if callable(extract_entities):
+                        try:
+                            with st.spinner("Analyzing resume skills and tools..."):
+                                return extract_entities(resume_text)
+                        except Exception:
+                            st.warning("AI extraction was unavailable; using the available fallback extraction.")
+                            try:
+                                from skill_extractor import _extract_entities_fallback
+                                return _extract_entities_fallback(resume_text)
+                            except Exception:
+                                return {"skills": [], "roles": [], "tools": []}
+                    return {"skills": [], "roles": [], "tools": []}
 
-                if callable(run_pipeline):
-                    try:
-                        with st.spinner("Processing resume..."):
-                            result = run_pipeline(path)
-                        pipeline_entities = result.get("raw", {})
-                        extracted = {
-                            "skills": sorted(set(extracted.get("skills", []) + pipeline_entities.get("skills", []))),
-                            "roles": sorted(set(extracted.get("roles", []) + pipeline_entities.get("roles", []))),
-                            "tools": sorted(set(extracted.get("tools", []) + pipeline_entities.get("tools", []))),
-                        }
-                    except Exception:
-                        pass
+                from signup_extraction_cache import get_or_extract_entities
+                extracted = get_or_extract_entities(
+                    st.session_state, resume_fingerprint, text,
+                    _run_signup_entity_extraction,
+                )
 
                 # Widget defaults are only applied on first creation. When a user
                 # uploads a resume after the signup form has rendered, Streamlit keeps

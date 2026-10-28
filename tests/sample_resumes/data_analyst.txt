@@ -1,0 +1,11 @@
+SAMPLE CANDIDATE
+SUMMARY
+Entry-level Data Analyst with experience cleaning datasets, building dashboards, and communicating trends to stakeholders.
+SKILLS
+SQL querying, exploratory data analysis, data cleaning, KPI reporting, dashboard design, statistical analysis, data visualization.
+TOOLS
+Excel, Power BI, Tableau, PostgreSQL, Python, pandas.
+PROJECTS
+Retail sales analysis: joined order and customer tables, calculated monthly revenue and repeat purchase rate, and built an interactive Power BI dashboard.
+EDUCATION
+BSc Information Systems, 2022-2025.

@@ -1,0 +1,41 @@
+name: Resume extraction regression tests
+
+on:
+  pull_request:
+    paths:
+      - "skill_extractor.py"
+      - "tests/**"
+      - ".github/workflows/resume-extraction-tests.yml"
+  push:
+    branches:
+      - master
+    paths:
+      - "skill_extractor.py"
+      - "tests/**"
+      - ".github/workflows/resume-extraction-tests.yml"
+
+jobs:
+  test-resume-extraction:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install test runner
+        run: python -m pip install --upgrade pip pytest
+      - name: Compile changed Python modules
+        run: python -m compileall -q skill_extractor.py streamlit_app.py pipeline.py signup_extraction_cache.py
+      - name: Run open-vocabulary extraction regression tests
+        run: python -m pytest -q tests/test_open_vocabulary_extraction.py tests/test_signup_extraction_cache.py
+
+      - name: Verify Groq API secret is available
+        env:
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+        run: python -c "import os; assert os.environ.get('GROQ_API_KEY'), 'GROQ_API_KEY secret is missing or unavailable to this workflow'"
+      - name: Run real Groq extraction integration tests
+        env:
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+        run: python -m pytest -q tests/test_real_groq_extraction.py
