@@ -599,7 +599,14 @@ def extract_projects(text):
             current and current["description"]
             and not re.search(r"[.!?][\"')\\]]?$", current["description"][-1].strip())
         )
-        if looks_like_heading and title_candidate and not technology_only_line and not previous_sentence_incomplete:
+        # Only suppress a likely wrapped continuation, not every new title
+        # after a bullet whose sentence happens to omit terminal punctuation.
+        continuation_start = bool(re.match(
+            r"^(?:and|or|for|of|with|using|their|its|hotspots|satellite|imagery|indices|derived|correlation)\\b",
+            title_candidate, re.I,
+        ))
+        wrapped_continuation = previous_sentence_incomplete and continuation_start and not re.search(r"[-–—:]", title_candidate)
+        if looks_like_heading and title_candidate and not technology_only_line and not wrapped_continuation:
             finish()
             current = {"name": title_candidate, "description": [], "technologies": []}
             if date_match:
