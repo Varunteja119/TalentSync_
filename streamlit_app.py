@@ -1060,28 +1060,25 @@ if not st.session_state.logged_in:
                 extracted_edu_exp = extract_education_experience(text)
                 extracted_projects = extract_projects(text)
 
-                extracted = {"skills": [], "roles": [], "tools": []}
-                if is_new_resume:
+                def _run_signup_entity_extraction(resume_text):
                     if callable(extract_entities):
                         try:
                             with st.spinner("Analyzing resume skills and tools..."):
-                                extracted = extract_entities(text)
+                                return extract_entities(resume_text)
                         except Exception:
                             st.warning("AI extraction was unavailable; using the available fallback extraction.")
                             try:
                                 from skill_extractor import _extract_entities_fallback
-                                extracted = _extract_entities_fallback(text)
+                                return _extract_entities_fallback(resume_text)
                             except Exception:
-                                extracted = {"skills": [], "roles": [], "tools": []}
-                    st.session_state["_signup_extracted_entities"] = extracted
-                else:
-                    # Streamlit reruns the script on every widget interaction.
-                    # Reuse the result for this file hash instead of calling the
-                    # LLM again on every rerun.
-                    extracted = st.session_state.get(
-                        "_signup_extracted_entities",
-                        {"skills": [], "roles": [], "tools": []},
-                    )
+                                return {"skills": [], "roles": [], "tools": []}
+                    return {"skills": [], "roles": [], "tools": []}
+
+                from signup_extraction_cache import get_or_extract_entities
+                extracted = get_or_extract_entities(
+                    st.session_state, resume_fingerprint, text,
+                    _run_signup_entity_extraction,
+                )
 
                 # Widget defaults are only applied on first creation. When a user
                 # uploads a resume after the signup form has rendered, Streamlit keeps
