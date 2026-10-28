@@ -525,86 +525,44 @@ def _normalize_entity_categories(entities):
 
 
 def extract_entities(text: str):
-    # Algorithm: Build final entities by merging NER-first extraction with fallback keyword/inference extraction.
+    """Extract resume entities using open-vocabulary LLM extraction first.
+
+    The vocabulary/heuristic pipeline is a deterministic fallback when the
+    LLM is not configured, returns no usable entities, or fails. The LLM is
+    no longer gated on a fixed number of detected skills.
     """
-    Extract skills, roles, and tools from text using NER + Fallback
-    
-    Algorithm flow:
-    1. PRIMARY: Use spaCy NER (PhraseMatcher) to extract entities
-    2. FALLBACK: Enhance with keyword matching & context inference
-    3. MERGE: Combine both for comprehensive coverage
-    
-    Returns:
-        dict: {"skills": [...], "roles": [...], "tools": [...]}
-    """
-    
-    # Extract using NER (primary)
-    ner_results = _extract_entities_ner(text)
-    
-    # Extract using keyword/inference (fallback)
-    fallback_results = _extract_entities_fallback(text)
-    
-    # Merge results: NER + Fallback for best coverage
-    merged = {
-        "skills": list(set(ner_results.get("skills", []) + fallback_results.get("skills", []))),
-        "roles": list(set(ner_results.get("roles", []) + fallback_results.get("roles", []))),
-        "tools": list(set(ner_results.get("tools", []) + fallback_results.get("tools", [])))
-    }
+    if not isinstance(text, str) or not text.strip():
+        return {"skills": [], "roles": [], "tools": []}
 
-    # Low-signal boost: if extraction is sparse, infer extra entities from section tokens.
-    if len(merged["skills"]) < LOW_SIGNAL_THRESHOLD:
-        normalized_text = re.sub(r"\s+", " ", text.lower())
-        section_tokens = _extract_section_tokens(text)
-        searchable = set(section_tokens)
-        searchable.add(normalized_text)
-
-        for skill, patterns in SKILL_HINTS.items():
-            if any(any(_contains_term(candidate, p) for p in patterns) for candidate in searchable):
-                merged["skills"].append(skill)
-
-        for role, patterns in ROLE_HINTS.items():
-            if any(any(_contains_term(candidate, p) for p in patterns) for candidate in searchable):
-                merged["roles"].append(role)
-
-        for tool, patterns in TOOL_HINTS.items():
-            if any(any(_contains_term(candidate, p) for p in patterns) for candidate in searchable):
-                merged["tools"].append(tool)
-
-        merged = {
-            "skills": list(set(merged["skills"])),
-            "roles": list(set(merged["roles"])),
-            "tools": list(set(merged["tools"])),
+    # Primary path: let the model identify resume-specific terminology without
+    # requiring it to appear in the static vocabulary files.
+    llm_results = _extract_entities_llm(text)
+    if any(llm_results.get(category) for category in ("skills", "roles", "tools")):
+        result = {
+            "skills": llm_results.get("skills", []),
+            "roles": llm_results.get("roles", []),
+            "tools": llm_results.get("tools", []),
+        }
+    else:
+        # Offline / API-failure fallback remains deterministic and dependency-light.
+        ner_results = _extract_entities_ner(text)
+        fallback_results = _extract_entities_fallback(text)
+        result = {
+            category: sorted(set(
+                ner_results.get(category, []) + fallback_results.get(category, [])
+            ))
+            for category in ("skills", "roles", "tools")
         }
 
-    # Final fallback: if the vocabulary-based paths (NER + keyword fallback
-    # + hint boost) are STILL thin, the resume likely uses terminology this
-    # app's static lists don't know about yet. Rather than silently
-    # under-extracting, ask an LLM to do open-vocabulary extraction. This
-    # only fires as a last resort -- it's the slowest, costs an API call,
-    # and depends on GROQ_API_KEY being configured; if it isn't,
-    # _extract_entities_llm degrades to empty results and extract_entities
-    # just returns whatever the free paths already found.
-    if len(merged["skills"]) < LOW_SIGNAL_THRESHOLD:
-        llm_results = _extract_entities_llm(text)
-        merged = {
-            "skills": sorted(set(merged["skills"] + llm_results.get("skills", []))),
-            "roles": sorted(set(merged["roles"] + llm_results.get("roles", []))),
-            "tools": sorted(set(merged["tools"] + llm_results.get("tools", []))),
-        }
-
-    # Guard against an LLM (or a broad vocabulary match) treating an umbrella
-    # heading such as "AI/ML Engineer" as proof of machine-learning practice.
-    # Keep the skill only when the resume contains an explicit methodology
-    # phrase or a concrete ML framework. Bare "ML" in a section/title is not
-    # enough evidence by itself; this avoids inflating ML/NLP core-skill overlap.
+    # Avoid inferring ML methodology from an umbrella title alone.
     explicit_ml_evidence = any(
         _contains_term(text.lower(), term)
         for term in ("machine learning", "tensorflow", "pytorch")
     )
     if not explicit_ml_evidence:
-        merged["skills"] = [
-            skill for skill in merged["skills"]
+        result["skills"] = [
+            skill for skill in result["skills"]
             if skill.lower() != "machine learning"
         ]
 
-    return _normalize_entity_categories(merged)
+    return _normalize_entity_categories(result)
