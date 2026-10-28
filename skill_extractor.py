@@ -300,15 +300,15 @@ def _extract_labeled_tools(text: str):
     found = set()
     for raw_line in (text or "").splitlines():
         line = raw_line.strip().lstrip("•●▪- ").strip()
-        match = re.match(r"^([^:]{2,80})\\s*:\\s*(.+)$", line)
+        match = re.match(r"^([^:]{2,80})\s*:\s*(.+)$", line)
         if not match:
             continue
         label, values = match.groups()
-        if not re.search(r"\\b(?:tools?|software|platforms?|technologies|technology stack|applications)\\b", label, re.I):
+        if not re.search(r"\b(?:tools?|software|platforms?|technologies|technology stack|applications)\b", label, re.I):
             continue
         for value in re.split(r"[,;|]", values):
-            item = re.sub(r"\\s+", " ", value).strip(" .-")
-            if 1 < len(item) <= 60 and not re.fullmatch(r"\\d+(?:\\.\\d+)?", item):
+            item = re.sub(r"\s+", " ", value).strip(" .-")
+            if 1 < len(item) <= 60 and not re.fullmatch(r"\d+(?:\.\d+)?", item):
                 found.add(item.lower())
     return found
 
