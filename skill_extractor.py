@@ -524,35 +524,70 @@ def _normalize_entity_categories(entities):
     return clean
 
 
-def extract_entities(text: str):
-    """Extract resume entities using open-vocabulary LLM extraction first.
+def _merge_entity_lists(*entity_sets):
+    """Merge categories deterministically while preserving open-vocabulary terms."""
+    return {
+        category: sorted({
+            re.sub(r"\\s+", " ", str(value)).strip().lower()
+            for entities in entity_sets
+            for value in (entities.get(category, []) or [])
+            if str(value).strip()
+        })
+        for category in ("skills", "roles", "tools")
+    }
 
-    The vocabulary/heuristic pipeline is a deterministic fallback when the
-    LLM is not configured, returns no usable entities, or fails. The LLM is
-    no longer gated on a fixed number of detected skills.
+
+def _filter_roles_to_resume_evidence(roles, text):
+    """Reject role predictions that are not explicitly evidenced by the resume.
+
+    Job titles are especially prone to LLM hallucination from transferable
+    skills (e.g. calling a civil engineer a data analyst because of generic
+    words such as 'analysis'). Only keep a predicted title when its wording,
+    or a conservative equivalent, occurs in the source text.
     """
-    if not isinstance(text, str) or not text.strip():
-        return {"skills": [], "roles": [], "tools": []}
+    normalized_text = re.sub(r"[^a-z0-9]+", " ", text.lower()).strip()
+    kept = []
+    for role in roles:
+        normalized_role = re.sub(r"[^a-z0-9]+", " ", str(role).lower()).strip()
+        if not normalized_role:
+            continue
+        # Require the title itself to appear as a phrase in the resume.
+        if re.search(r"(?<![a-z0-9])" + re.escape(normalized_role) + r"(?![a-z0-9])", normalized_text):
+            kept.append(str(role).lower().strip())
+    return sorted(set(kept))
 
-    # Primary path: let the model identify resume-specific terminology without
-    # requiring it to appear in the static vocabulary files.
-    llm_results = _extract_entities_llm(text)
-    if any(llm_results.get(category) for category in ("skills", "roles", "tools")):
-        result = {
-            "skills": llm_results.get("skills", []),
-            "roles": llm_results.get("roles", []),
-            "tools": llm_results.get("tools", []),
-        }
-    else:
-        # Offline / API-failure fallback remains deterministic and dependency-light.
-        ner_results = _extract_entities_ner(text)
-        fallback_results = _extract_entities_fallback(text)
-        result = {
-            category: sorted(set(
-                ner_results.get(category, []) + fallback_results.get(category, [])
-            ))
-            for category in ("skills", "roles", "tools")
-        }
+
+def extract_entities(text: str):
+    """Extract resume entities from both the LLM and deterministic evidence paths.
+
+    LLM extraction adds open-vocabulary terms; deterministic matching recovers
+    explicitly mentioned skills/tools the model can omit. Role predictions are
+    evidence-filtered to prevent unsupported inferred job titles.
+    """
+    empty = {"skills": [], "roles": [], "tools": []}
+    if not isinstance(text, str) or not text.strip():
+        return empty
+
+    try:
+        llm_results = _extract_entities_llm(text) or empty
+    except Exception:
+        # API/network/provider failures must not break signup extraction.
+        llm_results = empty
+
+    try:
+        ner_results = _extract_entities_ner(text) or empty
+    except Exception:
+        ner_results = empty
+    try:
+        fallback_results = _extract_entities_fallback(text) or empty
+    except Exception:
+        fallback_results = empty
+
+    result = _merge_entity_lists(llm_results, ner_results, fallback_results)
+
+    # Model/heuristic role predictions must be grounded in a title explicitly
+    # present in the resume. This intentionally prefers precision over guesses.
+    result["roles"] = _filter_roles_to_resume_evidence(result["roles"], text)
 
     # Avoid inferring ML methodology from an umbrella title alone.
     explicit_ml_evidence = any(
