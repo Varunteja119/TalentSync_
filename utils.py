@@ -123,8 +123,6 @@ def _parse_role_company(text):
     if ":" in value:
         left, right = (part.strip() for part in value.split(":", 1))
         if left and right and _looks_like_job_text(right):
-            if re.search(r"\b(construction|project|site|road|highway|ring road)\b", left, re.I):
-                return right, ""
             return right, left
     if " at " in value.lower():
         parts = re.split(r"\s+at\s+", value, flags=re.IGNORECASE, maxsplit=1)
