@@ -117,6 +117,13 @@ def _parse_role_company(text):
     if internship_match:
         employer, role = internship_match.groups()
         return role.strip(), employer.strip()
+    # Common resume format: "Employer : Role". Only interpret a colon as
+    # this separator when the right-hand side clearly resembles a job title;
+    # this avoids treating labels such as "Project Title: ..." as a job heading.
+    if ":" in value:
+        left, right = (part.strip() for part in value.split(":", 1))
+        if left and right and _looks_like_job_text(right):
+            return right, left
     if " at " in value.lower():
         parts = re.split(r"\s+at\s+", value, flags=re.IGNORECASE, maxsplit=1)
         return parts[0].strip(), parts[1].strip() if len(parts) > 1 else ""
@@ -539,7 +546,7 @@ def extract_projects(text):
                 if len(prepared) >= 2:
                     before_previous = prepared[-2]
                     continuation_start = re.match(
-                        r"^(?:for|of|and|with|using|based|in|on|from|to|their|its|the)\\b",
+                        r"^(?:for|of|and|with|using|based|in|on|from|to|their|its|the)\b",
                         previous.strip(), re.I,
                     )
                     if continuation_start and not re.match(bullet_pattern, before_previous):
@@ -605,7 +612,7 @@ def extract_projects(text):
         # every tool starts with a capital letter (e.g. "ArcGIS, QGIS, ...").
         technology_only_line = bool(title_candidate) and all(
             any(re.fullmatch(re.escape(tool), part.strip(), re.I) for tool in known_technologies)
-            for part in re.split(r"[,;|]", re.sub(r"\\band\\b", ",", title_candidate, flags=re.I))
+            for part in re.split(r"[,;|]", re.sub(r"\band\b", ",", title_candidate, flags=re.I)) if part.strip()
         )
         # PDF text extraction wraps prose at arbitrary points. If the previous
         # description line has no sentence-ending punctuation, a capitalized
@@ -617,7 +624,7 @@ def extract_projects(text):
         # Only suppress a likely wrapped continuation, not every new title
         # after a bullet whose sentence happens to omit terminal punctuation.
         continuation_start = bool(re.match(
-            r"^(?:and|or|for|of|with|using|their|its|hotspots|satellite|imagery|indices|derived|correlation)\\b",
+            r"^(?:and|or|for|of|with|using|their|its|hotspots|satellite|imagery|indices|derived|correlation)\b",
             title_candidate, re.I,
         ))
         wrapped_continuation = previous_sentence_incomplete and continuation_start and not re.search(r"[-–—:]", title_candidate)
