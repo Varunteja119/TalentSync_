@@ -518,6 +518,19 @@ def extract_projects(text):
         if date_range.search(line) and prepared:
             previous = prepared[-1]
             if not re.match(bullet_pattern, previous) and not re.match(bullet_pattern, line):
+                # A long project title may wrap across two lines before its date.
+                # If the previous line looks like a continuation ("For The Past..."),
+                # join both title fragments before attaching the date.
+                if len(prepared) >= 2:
+                    before_previous = prepared[-2]
+                    continuation_start = re.match(
+                        r"^(?:for|of|and|with|using|based|in|on|from|to|their|its|the)\\b",
+                        previous.strip(), re.I,
+                    )
+                    if continuation_start and not re.match(bullet_pattern, before_previous):
+                        prepared[-2] = before_previous + " " + previous + " " + line
+                        prepared.pop()
+                        continue
                 prepared[-1] = previous + " " + line
                 continue
         prepared.append(line)
@@ -573,7 +586,20 @@ def extract_projects(text):
             and not re.search(r"[.!?]$", title_candidate)
             and not re.match(r"^(?:analyzed|analysed|developed|built|created|implemented|designed|derived|worked|used|responsible|involved|studied|led|managed|achieved)\b", title_candidate, re.I)
         )
-        if looks_like_heading and title_candidate:
+        # Tool-only lines are technologies, not project names, even when
+        # every tool starts with a capital letter (e.g. "ArcGIS, QGIS, ...").
+        technology_only_line = bool(title_candidate) and all(
+            any(re.fullmatch(re.escape(tool), part.strip(), re.I) for tool in known_technologies)
+            for part in re.split(r"[,;|]", title_candidate)
+        )
+        # PDF text extraction wraps prose at arbitrary points. If the previous
+        # description line has no sentence-ending punctuation, a capitalized
+        # next line is usually a continuation rather than a new project title.
+        previous_sentence_incomplete = bool(
+            current and current["description"]
+            and not re.search(r"[.!?][\"')\\]]?$", current["description"][-1].strip())
+        )
+        if looks_like_heading and title_candidate and not technology_only_line and not previous_sentence_incomplete:
             finish()
             current = {"name": title_candidate, "description": [], "technologies": []}
             if date_match:
