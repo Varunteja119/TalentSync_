@@ -278,6 +278,11 @@ def _extract_entities_fallback(text: str):
     found_roles = set()
     found_tools = set()
 
+    # Preserve explicitly listed, open-vocabulary items from resume skill/tool
+    # sections. Known tools and titles are removed from the skill category later
+    # by _normalize_entity_categories, while novel methods remain available.
+    found_skills.update(section_tokens)
+
     # 🔹 Keyword matching against vocabulary
     for skill in SKILLS:
         if _contains_term(normalized_text, skill) or skill in section_tokens:
