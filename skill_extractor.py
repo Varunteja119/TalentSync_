@@ -210,52 +210,95 @@ def _contains_term(text: str, term: str) -> bool:
 
 
 def _extract_section_tokens(text: str):
-    # Heuristic: Capture candidate terms from resume skill sections and stop when non-skill sections begin.
-    """Extract tokens from skills/expertise sections"""
-    lines = [ln.strip() for ln in text.splitlines() if ln.strip()]
-    section_headers = [
-        "skills",
-        "technical skills",
-        "core competencies",
-        "expertise",
-        "tools",
-    ]
-    stop_headers = [
-        "experience",
-        "education",
-        "projects",
-        "summary",
-        "profile",
-        "certifications",
-    ]
+    """Extract individual items from skill/tool sections without category labels.
+
+    Resume PDFs commonly put labels and values on the same line, for example
+    "Design & Structural Analysis Tools: AutoCAD, STAAD-Pro". Treating the
+    whole left-hand label as a skill pollutes the profile with phrases that
+    are not skills. Conversely, treating every line beginning with "Tools:"
+    as a section heading drops the actual tool names. This handles both.
+    """
+    lines = [re.sub(r"\\s+", " ", ln).strip() for ln in text.splitlines() if ln.strip()]
+    section_headers = {
+        "skills", "technical skills", "core competencies", "expertise", "tools",
+        "technical expertise", "key skills", "areas of expertise",
+    }
+    stop_headers = {
+        "experience", "professional experience", "work experience", "work history",
+        "employment", "employment history", "education", "educational qualifications",
+        "academic qualifications", "projects", "academic projects", "personal projects",
+        "summary", "professional summary", "profile", "certifications",
+        "certifications & specialized training", "internship", "languages",
+    }
+
+    def header_and_payload(line):
+        if ":" in line:
+            left, right = line.split(":", 1)
+            return re.sub(r"\\s+", " ", left.lower()).strip(), right.strip(), True
+        return re.sub(r"\\s+", " ", line.lower()).strip(), "", False
+
+    def is_header(line, vocabulary):
+        label, payload, has_colon = header_and_payload(line.strip().strip("•▪▫*- "))
+        return label in vocabulary and not payload
 
     tokens = set()
     capture = False
     collected_lines = 0
+    category_labels = {
+        "tools", "tool", "software", "software tools", "design tools",
+        "design & structural analysis tools", "structural analysis tools",
+        "office & documentation", "documentation", "technical tools",
+        "programming languages", "languages", "frameworks", "libraries",
+        "platforms", "technologies", "technology stack", "tech stack",
+        "skills", "technical skills", "core competencies", "expertise",
+        "methodologies", "databases", "cloud platforms",
+    }
 
-    for line in lines:
-        lower = line.lower().strip(" :")
+    for raw_line in lines:
+        line = raw_line.strip().strip("•▪▫*- ")
+        label, payload, has_colon = header_and_payload(line)
 
-        if any(lower == h or lower.startswith(h + " ") for h in section_headers):
+        if is_header(line, section_headers):
             capture = True
             collected_lines = 0
             continue
 
-        if capture and any(lower.startswith(h) for h in stop_headers):
+        if capture and is_header(line, stop_headers):
             break
 
-        if capture:
-            parts = re.split(r"[,;|/•\u2022]+", line)
-            for part in parts:
-                token = re.sub(r"\s+", " ", part).strip(" -:\t")
-                if 2 <= len(token) <= 50:
-                    tokens.add(token.lower())
-            collected_lines += 1
-            if collected_lines >= 12:
-                break
+        # Support a section title and values on the same line, such as
+        # "Technical Skills: Python, SQL".
+        if not capture and has_colon and label in section_headers and payload:
+            capture = True
+            collected_lines = 0
+            line = payload
+            has_colon = False
+        elif capture and has_colon:
+            # Category labels are metadata; only the right-hand values are
+            # candidate terms. Unknown colon labels are handled the same way.
+            if label in category_labels or len(label.split()) <= 6:
+                line = payload
+
+        if not capture:
+            continue
+
+        parts = re.split(r"[,;|•●▪▫]+", line)
+        for part in parts:
+            token = re.sub(r"\\s+", " ", part).strip(" -:\\t")
+            token = re.sub(r"^(?:and|or)\\s+", "", token, flags=re.I).strip()
+            if not (2 <= len(token) <= 50):
+                continue
+            if token.lower() in category_labels or len(token.split()) > 7:
+                continue
+            if re.match(r"^(?:tools?|skills?|software|office|documentation)\\s*:", token, re.I):
+                continue
+            tokens.add(token.lower())
+
+        collected_lines += 1
+        if collected_lines >= 20:
+            break
 
     return tokens
-
 
 def _extract_entities_ner(text: str):
     # Algorithm: Apply spaCy PhraseMatcher-based NER to extract known skills, roles, and tools from text.
