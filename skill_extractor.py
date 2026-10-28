@@ -155,6 +155,24 @@ ROLE_HINTS = {
     "accounts executive": ["accounts executive", "accountant", "finance executive"],
 }
 
+# Common cross-domain methods that should be retained when explicitly stated.
+# This is an evidence list, not a closed vocabulary: LLM and section-token terms
+# remain open-vocabulary.
+EXPLICIT_SKILL_PHRASES = (
+    "structural analysis", "construction planning", "site execution",
+    "technical drawing interpretation", "quantity estimation",
+    "embankment filling", "field density testing", "compaction",
+    "exploratory data analysis", "data cleaning", "kpi reporting",
+    "dashboard design", "statistical analysis", "data visualization",
+    "rest api design", "unit testing", "debugging",
+    "object-oriented programming", "asynchronous task processing",
+    "containerization", "requirements gathering", "requirements elicitation",
+    "stakeholder interviews", "user stories", "acceptance criteria",
+    "process mapping", "gap analysis", "uat coordination",
+    "business process documentation", "process improvement",
+)
+
+
 TOOL_HINTS = {
     "git": ["git", "github", "gitlab", "bitbucket"],
     "docker": ["docker"],
@@ -282,6 +300,9 @@ def _extract_entities_fallback(text: str):
     # sections. Known tools and titles are removed from the skill category later
     # by _normalize_entity_categories, while novel methods remain available.
     found_skills.update(section_tokens)
+    for phrase in EXPLICIT_SKILL_PHRASES:
+        if _contains_term(normalized_text, phrase):
+            found_skills.add(phrase)
 
     # 🔹 Keyword matching against vocabulary
     for skill in SKILLS:
