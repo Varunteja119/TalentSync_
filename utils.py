@@ -108,6 +108,15 @@ def _parse_role_company(text):
     value = text.strip(" -|,:")
     if not value:
         return "", ""
+    # Common internship format: "INTERNSHIP Employer : Role".
+    # Keep the employer in the company field instead of treating the entire
+    # heading as a role and later misclassifying description text as company.
+    internship_match = re.match(
+        r"^INTERNSHIP\s+(.+?)\s*:\s*(.+)$", value, re.IGNORECASE
+    )
+    if internship_match:
+        employer, role = internship_match.groups()
+        return role.strip(), employer.strip()
     if " at " in value.lower():
         parts = re.split(r"\s+at\s+", value, flags=re.IGNORECASE, maxsplit=1)
         return parts[0].strip(), parts[1].strip() if len(parts) > 1 else ""
@@ -368,12 +377,18 @@ def _extract_experience_from_lines(lines):
                         pieces.append(" " + cleaned)
                 description = "".join(pieces).strip()
 
+        # Never infer an employer from a work-description sentence merely
+        # because it contains commas. Descriptions commonly list activities
+        # and are not reliable evidence of a company name.
         if not company and description:
             desc_lower = description.lower()
-            company_markers = ["pvt", "ltd", "llp", "inc", "corp", "technologies", "solutions", "systems"]
-            if any(m in desc_lower for m in company_markers) or "," in description:
-                company = description
-                description = ""
+            company_markers = [" pvt", " ltd", " llp", " inc", " corp", " technologies", " solutions", " systems"]
+            if any(m in f" {desc_lower}" for m in company_markers):
+                # Only promote a short company-like line, never a full sentence.
+                first_line = description.splitlines()[0].strip()
+                if len(first_line.split()) <= 8 and not re.search(r"[.!?]", first_line):
+                    company = first_line
+                    description = "\n".join(description.splitlines()[1:]).strip()
 
         experience.append(
             {
@@ -518,6 +533,19 @@ def extract_projects(text):
         if date_range.search(line) and prepared:
             previous = prepared[-1]
             if not re.match(bullet_pattern, previous) and not re.match(bullet_pattern, line):
+                # A long project title may wrap across two lines before its date.
+                # If the previous line looks like a continuation ("For The Past..."),
+                # join both title fragments before attaching the date.
+                if len(prepared) >= 2:
+                    before_previous = prepared[-2]
+                    continuation_start = re.match(
+                        r"^(?:for|of|and|with|using|based|in|on|from|to|their|its|the)\\b",
+                        previous.strip(), re.I,
+                    )
+                    if continuation_start and not re.match(bullet_pattern, before_previous):
+                        prepared[-2] = before_previous + " " + previous + " " + line
+                        prepared.pop()
+                        continue
                 prepared[-1] = previous + " " + line
                 continue
         prepared.append(line)
@@ -573,7 +601,27 @@ def extract_projects(text):
             and not re.search(r"[.!?]$", title_candidate)
             and not re.match(r"^(?:analyzed|analysed|developed|built|created|implemented|designed|derived|worked|used|responsible|involved|studied|led|managed|achieved)\b", title_candidate, re.I)
         )
-        if looks_like_heading and title_candidate:
+        # Tool-only lines are technologies, not project names, even when
+        # every tool starts with a capital letter (e.g. "ArcGIS, QGIS, ...").
+        technology_only_line = bool(title_candidate) and all(
+            any(re.fullmatch(re.escape(tool), part.strip(), re.I) for tool in known_technologies)
+            for part in re.split(r"[,;|]", re.sub(r"\\band\\b", ",", title_candidate, flags=re.I))
+        )
+        # PDF text extraction wraps prose at arbitrary points. If the previous
+        # description line has no sentence-ending punctuation, a capitalized
+        # next line is usually a continuation rather than a new project title.
+        previous_sentence_incomplete = bool(
+            current and current["description"]
+            and not re.search(r"[.!?][\"')\\]]?$", current["description"][-1].strip())
+        )
+        # Only suppress a likely wrapped continuation, not every new title
+        # after a bullet whose sentence happens to omit terminal punctuation.
+        continuation_start = bool(re.match(
+            r"^(?:and|or|for|of|with|using|their|its|hotspots|satellite|imagery|indices|derived|correlation)\\b",
+            title_candidate, re.I,
+        ))
+        wrapped_continuation = previous_sentence_incomplete and continuation_start and not re.search(r"[-–—:]", title_candidate)
+        if looks_like_heading and title_candidate and not technology_only_line and not wrapped_continuation:
             finish()
             current = {"name": title_candidate, "description": [], "technologies": []}
             if date_match:

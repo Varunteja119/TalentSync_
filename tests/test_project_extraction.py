@@ -1,6 +1,6 @@
 import unittest
 
-from utils import extract_projects
+from utils import extract_education_experience, extract_projects
 
 
 class ExtractProjectsTests(unittest.TestCase):
@@ -67,6 +67,23 @@ class ExtractProjectsTests(unittest.TestCase):
         self.assertIn("embeddings, semantic similarity", projects[0]["description"])
         self.assertIn("unstructured resumes into actionable career insights", projects[0]["description"])
         self.assertEqual(projects[1]["name"], "RetailPulse - E-Commerce Sales Analytics")
+
+    def test_internship_employer_is_not_replaced_by_work_description(self):
+        resume = """WORK EXPERIENCE
+        INTERNSHIP South Central Railway : Trainee Civil Engineer
+        01/2023 - 04/2023
+        • Involved in initial stages of 6-lane highway construction, focusing on site clearance and setting out work.
+        • Executed excavation, levelling, and embankment filling as per approved design profiles and MoRTH specifications.
+        • Monitored earthwork formation including compaction, moisture control, and layer-wise quality checks using field density tests.
+        """
+        result = extract_education_experience(resume)
+        self.assertEqual(len(result["experience"]), 1)
+        entry = result["experience"][0]
+        self.assertEqual(entry["role"], "Trainee Civil Engineer")
+        self.assertEqual(entry["company"], "South Central Railway")
+        self.assertIn("6-lane highway construction", entry["description"])
+        self.assertIn("field density tests", entry["description"])
+        self.assertNotIn("highway construction", entry["company"])
 
     def test_missing_projects_section_returns_empty_list(self):
         self.assertEqual(extract_projects("SUMMARY\nA graduate\nSKILLS\nPython, SQL"), [])

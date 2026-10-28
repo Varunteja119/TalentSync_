@@ -93,5 +93,7 @@ Derived Land Surface Temperature (LST) and calculated land use indices (NDVI, ND
     assert "For The Past Three Decades" in project["name"]
     assert "Mar 2022" not in project["name"]
     assert "Analyzed 30 years" in project["description"]
+    assert "Hotspots using Landsat satellite imagery" in project["description"]
+    assert "Derived Land Surface Temperature" in project["description"]
     assert "Project period: Mar 2022 – Jul 2022" in project["description"]
     assert {"ArcGIS", "QGIS", "ERDAS Imagine", "Landsat"} <= set(project["technologies"]), project
