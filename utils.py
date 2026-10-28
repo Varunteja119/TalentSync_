@@ -555,7 +555,7 @@ def extract_projects(text):
     # for the project name and the first title line isn't lost.
     prepared = []
     continuation_start_re = re.compile(
-        r"^(?:for|of|and|with|using|based|in|on|from|to|their|its|the|past)\\b",
+        r"^(?:for|of|and|with|using|based|in|on|from|to|their|its|the|past)\b",
         re.I,
     )
     for line in section_lines:
@@ -567,7 +567,7 @@ def extract_projects(text):
                 # line ("For The Past ... Mar 2022 - Jul 2022"), not the
                 # previous line. Inspect the text before the date so wrapped
                 # project titles stay together without joining separate titles.
-                title_fragment = date_range.sub("", line).strip(" -–—,. :\\t")
+                title_fragment = date_range.sub("", line).strip(" -–—,. :\t")
                 if not title_fragment or continuation_start_re.match(title_fragment):
                     prepared[-1] = previous + " " + line
                     continue
@@ -753,15 +753,15 @@ def extract_education_experience(text):
                 # is not a specialization. If a field follows the qualification
                 # on the same line, preserve only that field text.
                 qualification_re = re.compile(
-                    r"^\\s*(?:b\\.?\\s?tech|b\\.?\\s?e\\.?|b\\.?\\s?sc\\.?|"
-                    r"bachelor(?:'s)?(?:\\s+of\\s+[a-z]+)?|m\\.?\\s?tech|"
-                    r"m\\.?\\s?sc\\.?|master(?:'s)?|mba|phd|diploma|"
-                    r"intermediate|high\\s+school|class\\s+x(?:ii)?|"
-                    r"higher\\s+secondary|senior\\s+secondary)\\b",
+                    r"^\s*(?:b\.?\s?tech|b\.?\s?e\.?|b\.?\s?sc\.?|"
+                    r"bachelor(?:'s)?(?:\s+of\s+[a-z]+)?|m\.?\s?tech|"
+                    r"m\.?\s?sc\.?|master(?:'s)?|mba|phd|diploma|"
+                    r"intermediate|high\s+school|class\s+x(?:ii)?|"
+                    r"higher\s+secondary|senior\s+secondary)\b",
                     re.I,
                 )
                 field_candidate = qualification_re.sub("", cleaned_line, count=1).strip(" -:,")
-                field_candidate = re.sub(r"^(?:in|of)\\s+", "", field_candidate, flags=re.I).strip()
+                field_candidate = re.sub(r"^(?:in|of)\s+", "", field_candidate, flags=re.I).strip()
                 if field_candidate:
                     current_edu["field"] = field_candidate
                 elif degree:
