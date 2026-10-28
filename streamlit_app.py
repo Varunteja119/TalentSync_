@@ -1064,26 +1064,18 @@ if not st.session_state.logged_in:
                 if callable(extract_entities):
                     try:
                         if not st.session_state.get("_nlp_warmed_up"):
-                            with st.spinner("Loading NLP model (first time only)..."):
+                            with st.spinner("Analyzing resume skills and tools..."):
                                 extracted = extract_entities(text)
                             st.session_state["_nlp_warmed_up"] = True
                         else:
                             extracted = extract_entities(text)
-                    except Exception:
-                        extracted = {"skills": [], "roles": [], "tools": []}
-
-                if callable(run_pipeline):
-                    try:
-                        with st.spinner("Processing resume..."):
-                            result = run_pipeline(path)
-                        pipeline_entities = result.get("raw", {})
-                        extracted = {
-                            "skills": sorted(set(extracted.get("skills", []) + pipeline_entities.get("skills", []))),
-                            "roles": sorted(set(extracted.get("roles", []) + pipeline_entities.get("roles", []))),
-                            "tools": sorted(set(extracted.get("tools", []) + pipeline_entities.get("tools", []))),
-                        }
-                    except Exception:
-                        pass
+                    except Exception as exc:
+                        st.warning("AI extraction was unavailable; using the available fallback extraction.")
+                        try:
+                            from skill_extractor import _extract_entities_fallback
+                            extracted = _extract_entities_fallback(text)
+                        except Exception:
+                            extracted = {"skills": [], "roles": [], "tools": []}
 
                 # Widget defaults are only applied on first creation. When a user
                 # uploads a resume after the signup form has rendered, Streamlit keeps
