@@ -1,0 +1,9 @@
+SAMPLE CANDIDATE
+SUMMARY
+Junior Business Analyst experienced in requirements gathering and process improvement.
+SKILLS
+Stakeholder interviews, requirements elicitation, user stories, acceptance criteria, process mapping, gap analysis, UAT coordination, business process documentation.
+TOOLS
+Jira, Confluence, Microsoft Excel, Visio, Microsoft PowerPoint.
+EXPERIENCE
+Business Analysis Intern, 2025. Documented as-is and to-be workflows, maintained a requirements traceability matrix, and supported user acceptance testing.
