@@ -290,6 +290,29 @@ def _extract_entities_ner(text: str):
     return {k: list(v) for k, v in extracted.items()}
 
 
+def _extract_labeled_tools(text: str):
+    """Extract tools from explicitly labelled tool/software/platform lines.
+
+    This is intentionally label-driven rather than a fixed list of products:
+    resumes from different industries can introduce tools unknown to the
+    application's static vocabulary.
+    """
+    found = set()
+    for raw_line in (text or "").splitlines():
+        line = raw_line.strip().lstrip("•●▪- ").strip()
+        match = re.match(r"^([^:]{2,80})\\s*:\\s*(.+)$", line)
+        if not match:
+            continue
+        label, values = match.groups()
+        if not re.search(r"\\b(?:tools?|software|platforms?|technologies|technology stack|applications)\\b", label, re.I):
+            continue
+        for value in re.split(r"[,;|]", values):
+            item = re.sub(r"\\s+", " ", value).strip(" .-")
+            if 1 < len(item) <= 60 and not re.fullmatch(r"\\d+(?:\\.\\d+)?", item):
+                found.add(item.lower())
+    return found
+
+
 def _extract_entities_fallback(text: str):
     # Algorithm: Use keyword lookup plus context inference rules to recover entities missed by NER.
     """
@@ -303,6 +326,9 @@ def _extract_entities_fallback(text: str):
     found_skills = set()
     found_roles = set()
     found_tools = set()
+    # Explicitly labelled tool/software lists are stronger evidence than a
+    # static vocabulary and work for tools from any profession.
+    found_tools.update(_extract_labeled_tools(text))
 
     # Preserve explicitly listed, open-vocabulary items from resume skill/tool
     # sections. Known tools and titles are removed from the skill category later
