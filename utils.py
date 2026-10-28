@@ -472,8 +472,21 @@ def _extract_structured_education(edu_lines):
         degree_line = next((ln for ln in detail_lines if _infer_degree(ln)), "")
         degree = _infer_degree(degree_line)
 
+        # A qualification label such as "High School" may itself contain
+        # an institution keyword. Prefer an institution line that is not also
+        # the qualification/date line; otherwise "High School" can mask the
+        # actual school name on the next line.
         college_raw = next(
-            (ln for ln in detail_lines if any(k in ln.lower() for k in ["college", "university", "institute", "school"])),
+            (
+                ln for ln in detail_lines
+                if any(k in ln.lower() for k in ["college", "university", "institute", "school"])
+                and not re.match(
+                    r"^\\s*(?:intermediate|high school|class\\s*x(?:ii)?|higher secondary|senior secondary|"
+                    r"b\\.?tech|bachelor(?:'s)?|master(?:'s)?|m\\.?tech|m\\.?sc|mba|diploma|phd)\\b",
+                    ln,
+                    re.I,
+                )
+            ),
             "",
         )
         college = re.sub(r"\s+\d+(?:\.\d+)?\s*(?:CGPA|GPA)\b.*$", "", college_raw, flags=re.I).strip(" ,")
