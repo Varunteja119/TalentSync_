@@ -481,8 +481,8 @@ def _extract_structured_education(edu_lines):
                 ln for ln in detail_lines
                 if any(k in ln.lower() for k in ["college", "university", "institute", "school"])
                 and not re.match(
-                    r"^\\s*(?:intermediate|high school|class\\s*x(?:ii)?|higher secondary|senior secondary|"
-                    r"b\\.?tech|bachelor(?:'s)?|master(?:'s)?|m\\.?tech|m\\.?sc|mba|diploma|phd)\\b",
+                    r"^\s*(?:intermediate|high school|class\s*x(?:ii)?|higher secondary|senior secondary|"
+                    r"b\.?tech|bachelor(?:'s)?|master(?:'s)?|m\.?tech|m\.?sc|mba|diploma|phd)\b",
                     ln,
                     re.I,
                 )
