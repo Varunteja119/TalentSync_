@@ -470,19 +470,19 @@ def _clean_llm_list(values, split_compounds=False):
         return []
     cleaned = set()
     clause_markers = re.compile(
-        r"\\b(?:using|including|focusing on|as per|followed by|known for|worked on|"
+        r"\b(?:using|including|focusing on|as per|followed by|known for|worked on|"
         r"involved in|executed|monitored|analyzed|analysed|derived|eager to|"
-        r"responsible for|with a strong foundation)\\b",
+        r"responsible for|with a strong foundation)\b",
         re.I,
     )
     for value in values:
-        raw = re.sub(r"\\s+", " ", str(value)).strip().lower()
+        raw = re.sub(r"\s+", " ", str(value)).strip().lower()
         if not raw:
             continue
         parts = re.split(r"[,;]+", raw) if split_compounds and ("," in raw or ";" in raw or len(raw.split()) > 7) else [raw]
         for part in parts:
-            item = re.sub(r"\\s+", " ", part).strip(" .;,:-")
-            item = re.sub(r"^(?:and|or)\\s+", "", item, flags=re.I).strip()
+            item = re.sub(r"\s+", " ", part).strip(" .;,:-")
+            item = re.sub(r"^(?:and|or)\s+", "", item, flags=re.I).strip()
             if not item:
                 continue
             # Keep skills concise and atomic. Open vocabulary is allowed, but
