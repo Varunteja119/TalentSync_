@@ -464,10 +464,33 @@ Resume text:
 """
 
 
-def _clean_llm_list(values):
+def _clean_llm_list(values, split_compounds=False):
+    """Normalize LLM entities and discard sentence fragments masquerading as skills."""
     if not isinstance(values, list):
         return []
-    return sorted(set(str(v).strip().lower() for v in values if str(v).strip()))
+    cleaned = set()
+    clause_markers = re.compile(
+        r"\\b(?:using|including|focusing on|as per|followed by|known for|worked on|"
+        r"involved in|executed|monitored|analyzed|analysed|derived|eager to|"
+        r"responsible for|with a strong foundation)\\b",
+        re.I,
+    )
+    for value in values:
+        raw = re.sub(r"\\s+", " ", str(value)).strip().lower()
+        if not raw:
+            continue
+        parts = re.split(r"[,;]+", raw) if split_compounds and ("," in raw or ";" in raw or len(raw.split()) > 7) else [raw]
+        for part in parts:
+            item = re.sub(r"\\s+", " ", part).strip(" .;,:-")
+            item = re.sub(r"^(?:and|or)\\s+", "", item, flags=re.I).strip()
+            if not item:
+                continue
+            # Keep skills concise and atomic. Open vocabulary is allowed, but
+            # whole bullet sentences and clause fragments are not skill names.
+            if split_compounds and (len(item.split()) > 7 or (len(item.split()) > 3 and clause_markers.search(item))):
+                continue
+            cleaned.add(item)
+    return sorted(cleaned)
 
 
 MAX_CHUNK_CHARS = 6000
@@ -550,7 +573,7 @@ def _extract_entities_llm(text: str):
         except Exception:
             continue  # this chunk failed; keep whatever other chunks yielded
 
-        merged["skills"].extend(_clean_llm_list(parsed.get("skills")))
+        merged["skills"].extend(_clean_llm_list(parsed.get("skills"), split_compounds=True))
         merged["roles"].extend(_clean_llm_list(parsed.get("roles")))
         merged["tools"].extend(_clean_llm_list(parsed.get("tools")))
 
